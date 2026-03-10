@@ -21,3 +21,8 @@ dev/
 
 # Results file
 results.tsv
+
+# Ralph experiment artifacts
+experiments/
+train_best.py
+run_logs.md
