@@ -85,7 +85,7 @@ Per-project, at `projects/<name>/experiments/results.tsv`. Header is generated f
 experiment	<metric.key>	<extra_key_1>	<extra_key_2>	...	status	description
 ```
 
-For `gpt-bpb` this is `experiment\tval_bpb\tpeak_vram_mb\tstatus\tdescription` — identical in spirit to today's file, so the 13 existing rows carry over unchanged modulo being re-headered if needed. `peak_vram_mb` stays stored in GB (divided by 1024) as today, to avoid breaking the existing column's semantics.
+For `gpt-bpb` this is `experiment\tval_bpb\tpeak_vram_mb\tstatus\tdescription` — identical in spirit to today's file, so the 13 existing rows carry over unchanged modulo being re-headered if needed. **Note — unit fix for `peak_vram_mb`:** the new `ralph.sh` logs whatever `train.py` prints verbatim (MB, matching the column name). The previous orchestrator divided by 1024 before logging, so historical rows in `results.tsv` are actually in GB despite the header. New rows land in MB. This is a deliberate semantic fix — the column name was always `peak_vram_mb`, and future analysis should treat rows committed after the migration as MB.
 
 `status` values: `keep`, `discard`, `crash` (unchanged from today).
 

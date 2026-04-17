@@ -537,6 +537,8 @@ EOF
 
     log_run_end() {
         local num="$1" score="$2" status="$3" desc="$4"
+        # Range ends at next "## " heading; for the newest experiment it extends to EOF,
+        # which is safe because "- **Status** : en cours..." is unique per experiment block.
         sed -i "/## Experiment #$num/,/^## /{s|- \*\*Status\*\* : en cours\.\.\.|- **Status** : $status ($metric_key: $score)\n- **Description** : $desc|}" "$run_logs" 2>/dev/null || true
     }
 
@@ -584,6 +586,7 @@ EOF
     while true; do
         local num; num=$(get_next_num)
 
+        # max=0 (default) means unlimited; positive N caps post-baseline experiments.
         if [[ "$max" -gt 0 && "$num" -gt "$max" ]]; then
             echo "Max experiments ($max) reached. Stopping."
             break
