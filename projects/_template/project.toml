@@ -1,0 +1,11 @@
+name = "_template"
+description = "TODO: describe the project"
+
+[metric]
+key = "TODO_metric"
+direction = "minimize"
+extra_keys = []
+
+[run]
+train_cmd = "uv run train.py"
+timeout_s = 600
