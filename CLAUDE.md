@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Autonomous LLM pretraining research by Karpathy. An AI agent iteratively modifies `train.py`, runs 5-minute training experiments on a single GPU, and keeps changes that lower `val_bpb` (validation bits per byte). The agent operates autonomously in a loop — no human interaction needed once started.
+Autonomous pretraining/research framework by Karpathy. The repo hosts one or more self-contained research projects under `projects/<name>/`. For each project, an AI agent iteratively modifies the project's `train.py`, runs a short training experiment, and keeps changes that improve the project's declared metric (see `project.toml [metric]`). The default project `gpt-bpb` minimizes `val_bpb` (validation bits per byte) with a 5-minute budget; other projects can declare their own metric, direction, and timeout. The agent operates autonomously in a loop — no human interaction needed once started.
 
 ## Commands
 
@@ -25,8 +25,8 @@ The repo hosts multiple research projects under `projects/<name>/`. Each project
 - **`projects/<name>/project.toml`** — declares `metric.key`, `metric.direction` (minimize/maximize), `metric.extra_keys`, `run.train_cmd`, `run.timeout_s`. Read by `ralph.sh` to know how to execute and score the project.
 - **`projects/<name>/prepare.py`** — READ-ONLY for the agent. One-time data download + tokenizer + runtime helpers (dataloader, eval function). Imported by `train.py`.
 - **`projects/<name>/train.py`** — THE ONLY FILE THE AGENT EDITS. Model + optimizer + training loop. Must print `<metric.key>: <float>` (and each `extra_keys[i]: <float>`) on stdout/stderr.
-- **`projects/<name>/prompt.md`** — agent instructions for this project. Edited by humans.
-- **`ralph.sh`** — root orchestrator. Subcommands `run`, `new`, `list`. Never touches `prepare.py` or `project.toml`; owns `train_best.py`, `experiments/`, `run_logs.md`.
+- **`projects/<name>/prompt.md`** — agent instructions for this project. Edited by humans; may also be appended to by the agent when it wants to leave notes for future iterations.
+- **`ralph.sh`** — root orchestrator. Subcommands `run`, `new`, `list`. Never modifies `prepare.py` or `project.toml`. Manages `train_best.py` and `experiments/`. Writes start/end entries to `run_logs.md`; the agent appends its own notes there too.
 
 ## Experiment Loop Protocol (per project)
 
@@ -60,6 +60,6 @@ For `gpt-bpb`: `experiment`, `val_bpb`, `peak_vram_mb`, `status`, `description`.
 
 GPT with: RMSNorm, rotary embeddings, Flash Attention 3, sliding window pattern (SSSL), value embeddings (ResFormer), per-layer residual/x0 lambdas, ReluSquared MLP activation, logit soft-capping. Optimizer uses Muon (polar express orthogonalization + NorMuon variance reduction) for matrix params and AdamW for embeddings/scalars.
 
-## Tunable Hyperparameters (module-level constants in train.py)
+## Tunable Hyperparameters (module-level constants in `projects/gpt-bpb/train.py`)
 
 `DEPTH`, `ASPECT_RATIO`, `HEAD_DIM`, `WINDOW_PATTERN`, `TOTAL_BATCH_SIZE`, `DEVICE_BATCH_SIZE`, `EMBEDDING_LR`, `UNEMBEDDING_LR`, `MATRIX_LR`, `SCALAR_LR`, `WEIGHT_DECAY`, `ADAM_BETAS`, `WARMUP_RATIO`, `WARMDOWN_RATIO`, `FINAL_LR_FRAC`.
