@@ -371,12 +371,14 @@ cmd_new() {
     [[ $# -ne 1 ]] && { echo "Usage: $0 new <name>"; exit 1; }
     local name="$1"
 
-    case "$name" in
-        ""|_template|*/*|*" "*)
-            echo "ERROR: invalid project name '$name'."
-            exit 1
-            ;;
-    esac
+    if ! [[ "$name" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]]; then
+        echo "ERROR: project name must match [a-zA-Z0-9][a-zA-Z0-9_-]* — got '$name'."
+        exit 1
+    fi
+    if [[ "$name" == "_template" ]]; then
+        echo "ERROR: '_template' is a reserved name."
+        exit 1
+    fi
 
     local target="$PROJECTS_ROOT/$name"
     local template="$PROJECTS_ROOT/_template"
