@@ -114,19 +114,40 @@ Hi have a look at prompt.md and let's kick off a new experiment! let's do the se
 
 The `prompt.md` file is essentially a super lightweight "skill".
 
+## Running autonomously with `ralph.sh`
+
+This fork ships a bash orchestrator that runs the experiment loop fully unattended. It spawns Claude Code in a loop (one call per experiment), keeps a canonical `train_best.py`, logs every run to `experiments/` and `run_logs.md`, and only promotes a change when `val_bpb` improves.
+
+```bash
+./ralph.sh              # infinite loop
+./ralph.sh --max 20     # stop after 20 experiments
+```
+
+Requirements: `claude` CLI (Claude Code) on `$PATH`, `uv`, and a baseline that trains cleanly. Press Ctrl+C to stop — the trap kills the current child (Claude or `train.py`) and exits cleanly.
+
+What each iteration does:
+1. Copy `train_best.py` → `train.py` (always start from the current best)
+2. Call `claude -p` with `prompt.md` + full history (`results.tsv`, last 5 reports, `run_logs.md`) — Claude edits `train.py` only, no training
+3. Syntax-check `train.py`; revert and mark `crash` if invalid
+4. Run `uv run train.py` with a 600s timeout
+5. If `val_bpb` improved → update `train_best.py` and `best_score`; otherwise revert. Log either way to `experiments/results.tsv`.
+
+Per-experiment artifacts land in `experiments/experiment_<N>/`: `train_before.py`, `train.py`, `prompt.md`, `run.log`, `claude_output.log`, `report.md`.
+
+`prompt.md` replaces `program.md` as the instruction file in this flow — edit it to steer the agent (hardware notes, exploration priorities, lessons learned across runs).
+
 ## Project structure
 
 ```
-prepare.py         — constants, data prep + runtime utilities (do not modify)
-train.py           — model, optimizer, training loop (agent modifies this)
-train_best.py      — current best version of train.py (auto-managed by ralph.sh)
-prompt.md          — agent instructions + accumulated research knowledge
-ralph.sh           — autonomous experiment orchestrator
-train_remote.py    — RunPod remote training wrapper
-pyproject.toml     — dependencies
-experiments/       — one directory per experiment (code snapshots, logs, reports)
-  results.tsv      — tab-separated experiment results
-run_logs.md        — human-readable experiment journal
+prepare.py        — constants, data prep + runtime utilities (do not modify)
+train.py          — model, optimizer, training loop (agent modifies this)
+train_best.py     — current best version of train.py (managed by ralph.sh)
+program.md        — agent instructions (vanilla flow)
+prompt.md         — agent instructions (ralph.sh flow)
+ralph.sh          — autonomous experiment loop
+experiments/      — per-run artifacts and results.tsv (untracked)
+run_logs.md       — human-readable journal of runs (maintained by the agent)
+pyproject.toml    — dependencies
 ```
 
 ## Design choices

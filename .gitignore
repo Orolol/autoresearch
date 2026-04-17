@@ -20,9 +20,9 @@ AGENTS.md
 dev/
 
 # Results file
-results.tsv
+projects/*/experiments/results.tsv
 
-# Ralph experiment artifacts
-experiments/
-train_best.py
-run_logs.md
+# Ralph experiment artifacts (per-project)
+projects/*/experiments/
+projects/*/train_best.py
+projects/*/run_logs.md

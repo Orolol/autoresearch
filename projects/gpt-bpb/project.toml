@@ -1,0 +1,11 @@
+name = "gpt-bpb"
+description = "GPT-2 like model, minimize val_bpb on FineWeb-like data"
+
+[metric]
+key = "val_bpb"
+direction = "minimize"
+extra_keys = ["peak_vram_mb"]
+
+[run]
+train_cmd = "uv run train.py"
+timeout_s = 600
