@@ -1,23 +1,17 @@
 #!/usr/bin/env bash
-# ralph.sh — Orchestrateur autonome d'expériences ML
-# Lance Claude en boucle pour itérer sur train.py et améliorer val_bpb.
+# ralph.sh — Multi-project autoresearch orchestrator.
 #
-# Usage: ./ralph.sh
-#        ./ralph.sh --max 20   # limiter à 20 expériences
+# Subcommands:
+#   ./ralph.sh list                       # list projects and their current best score
+#   ./ralph.sh new <name>                 # scaffold projects/<name>/ from projects/_template/
+#   ./ralph.sh run <project> [--max N]    # run the RALPH loop for <project>
 #
-# Appuyer sur Ctrl+C (ou Echap dans le terminal) pour tout arrêter proprement.
+# Ctrl+C stops cleanly (kills the current child process tree).
 
 set -uo pipefail
-# PAS de set -m : on garde les enfants dans le même process group
-# pour que Ctrl+C (SIGINT) les atteigne directement
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-EXP_ROOT="$ROOT/experiments"
-RESULTS_FILE="$EXP_ROOT/results.tsv"
-BEST_TRAIN="$ROOT/train_best.py"
-BEST_SCORE_FILE="$EXP_ROOT/best_score"
-PROMPT_FILE="$ROOT/prompt.md"
-RUN_LOGS="$ROOT/run_logs.md"
+PROJECTS_ROOT="$ROOT/projects"
 STOPPING=0
 MAX_FIX_ATTEMPTS=1              # nb max de fix par crash analysis
 
@@ -26,16 +20,14 @@ CHILD_PID=0
 cleanup() {
     [[ "$STOPPING" -eq 1 ]] && return
     STOPPING=1
-    trap '' INT TERM HUP  # ignorer les signaux pendant le cleanup
+    trap '' INT TERM HUP
 
     echo ""
     echo "========================================="
     echo "  Arrêt demandé — nettoyage en cours..."
     echo "========================================="
 
-    # Tuer le processus enfant direct et tout son arbre
     if [[ "$CHILD_PID" -gt 0 ]] && kill -0 "$CHILD_PID" 2>/dev/null; then
-        # Tuer tout l'arbre de processus via pkill -P (enfants récursifs)
         pkill -TERM -P "$CHILD_PID" 2>/dev/null || true
         kill -TERM "$CHILD_PID" 2>/dev/null || true
         sleep 1
@@ -43,14 +35,12 @@ cleanup() {
         kill -9 "$CHILD_PID" 2>/dev/null || true
     fi
 
-    # Filet de sécurité : tuer tout train.py et claude qui traînent
     pkill -9 -f "python.*train\.py" 2>/dev/null || true
     pkill -9 -f "claude.*dangerously" 2>/dev/null || true
 
     echo "Tout est arrêté. Au revoir !"
     exit 0
 }
-
 trap cleanup INT TERM HUP
 
 # --- Args ---
@@ -128,32 +118,45 @@ get_next_num() {
     echo $((last + 1))
 }
 
-extract_metric() {
-    local file="$1" key="$2"
-    grep "^${key}:" "$file" 2>/dev/null | tail -1 | awk '{print $2}' || echo ""
+# read_toml_list <file> <python-expr-returning-iterable>
+read_toml_list() {
+    local file="$1" expr="$2"
+    uv run python - "$file" <<PY
+import sys
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
+with open(sys.argv[1], "rb") as f:
+    data = tomllib.load(f)
+for x in $expr:
+    print(x)
+PY
 }
 
-log_result() {
-    local num="$1" val_bpb="$2" peak_vram="$3" status="$4" desc="$5"
-    local vram_gb
-    vram_gb=$(uv run python -c "print(f'{float(\"${peak_vram:-0}\") / 1024:.1f}')" 2>/dev/null || echo "0.0")
-    printf "%s\t%s\t%s\t%s\t%s\n" "$num" "$val_bpb" "$vram_gb" "$status" "$desc" >> "$RESULTS_FILE"
-}
+# --- Subcommands ---
 
-log_run_start() {
-    local num="$1" best="$2"
-    local timestamp
-    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    cat >> "$RUN_LOGS" <<EOF
+cmd_list() {
+    [[ $# -gt 0 ]] && { echo "Usage: $0 list"; exit 1; }
 
-## Experiment #$num — $timestamp
+    if [[ ! -d "$PROJECTS_ROOT" ]]; then
+        echo "No projects/ directory. Use '$0 new <name>' to create one."
+        return
+    fi
 
-- **Best val_bpb avant** : $best
-- **Status** : en cours...
+    printf "%-24s  %-16s  %-10s  %-14s  %s\n" "name" "metric" "direction" "best" "#experiments"
+    printf "%-24s  %-16s  %-10s  %-14s  %s\n" "----" "------" "---------" "----" "------------"
 
-EOF
-}
+    local any=0
+    for toml in "$PROJECTS_ROOT"/*/project.toml; do
+        [[ -e "$toml" ]] || continue
+        local pdir name
+        pdir="$(dirname "$toml")"
+        name="$(basename "$pdir")"
+        [[ "$name" == "_template" ]] && continue
+        any=1
 
+<<<<<<< HEAD
 log_run_end() {
     local num="$1" val_bpb="$2" status="$3" desc="$4"
     # Mettre à jour le status dans run_logs.md
@@ -345,13 +348,57 @@ Tu es un chercheur autonome en deep learning. Expérience #$NUM.
 - Ne répète JAMAIS une idée morte listée dans prompt.md, même avec une "petite variation".
 - Cherche de l'inspiration dans la littérature récente (arxiv, modded-nanogpt, etc.).
 - Un crash audacieux vaut mieux qu'un +0.001 timide.
+=======
+        local metric direction best count
+        metric="$(read_toml_str "$toml" "data['metric']['key']")"
+        direction="$(read_toml_str "$toml" "data['metric']['direction']")"
+        if [[ -f "$pdir/experiments/best_score" ]]; then
+            best="$(cat "$pdir/experiments/best_score")"
+        else
+            best="—"
+        fi
+        count=$(find "$pdir/experiments" -maxdepth 1 -type d -name 'experiment_*' 2>/dev/null | wc -l)
+        printf "%-24s  %-16s  %-10s  %-14s  %s\n" "$name" "$metric" "$direction" "$best" "$count"
+    done
 
-## Règles strictes
-- Tu ne modifies QUE train.py (prepare.py est read-only)
-- Pas de nouvelles dépendances (uniquement ce qui est dans pyproject.toml)
-- Tu ne lances PAS l'entraînement toi-même — c'est ralph.sh qui s'en charge après toi
-- NE PAS exécuter uv run train.py. NE PAS lancer de run.
+    if [[ "$any" -eq 0 ]]; then
+        echo "(no projects yet; only _template exists)"
+    fi
+    return 0
+}
 
+cmd_new() {
+    [[ $# -ne 1 ]] && { echo "Usage: $0 new <name>"; exit 1; }
+    local name="$1"
+
+    case "$name" in
+        ""|_template|*/*|*" "*)
+            echo "ERROR: invalid project name '$name'."
+            exit 1
+            ;;
+    esac
+
+    local target="$PROJECTS_ROOT/$name"
+    local template="$PROJECTS_ROOT/_template"
+
+    [[ -e "$target" ]]     && { echo "ERROR: $target already exists."; exit 1; }
+    [[ ! -d "$template" ]] && { echo "ERROR: $template not found."; exit 1; }
+
+    cp -r "$template" "$target"
+    # Replace only the name = "_template" line in the new project.toml.
+    sed -i "s/^name = \"_template\"$/name = \"$name\"/" "$target/project.toml"
+
+    cat <<EOF
+Scaffolded: $target
+>>>>>>> 6889b79 (feat(ralph): rewrite as subcommand dispatcher with list + new)
+
+Next steps:
+  1. Edit $target/project.toml (metric.key, direction, extra_keys)
+  2. Implement $target/prepare.py (data + tokenizer)
+  3. Implement $target/train.py (training loop; print <metric.key>: <float>)
+  4. Fill $target/prompt.md (hardware, exploration priorities, philosophy)
+
+<<<<<<< HEAD
 ## À faire
 1. Lis les fichiers ci-dessus pour comprendre le code et l'historique
 2. Analyse l'historique et le journal des runs pour éviter de répéter des échecs
@@ -366,12 +413,18 @@ Tu es un chercheur autonome en deep learning. Expérience #$NUM.
    - Ligne 1 : description courte (UNE phrase, sans markdown heading)
    - Ce que tu as changé et pourquoi
 8. Si tu as des notes ou conseils pour les prochaines itérations, modifie $ROOT/prompt.md
+=======
+When ready: $0 run $name
+EOF
+}
+>>>>>>> 6889b79 (feat(ralph): rewrite as subcommand dispatcher with list + new)
 
-IMPORTANT : ton SEUL travail est de modifier train.py intelligemment. L'entraînement sera lancé automatiquement après.
-Commence maintenant. Ne demande pas confirmation.
-PROMPT_EOF
-    )"
+cmd_run() {
+    echo "ERROR: 'run' subcommand not implemented yet (see Task 4)."
+    exit 1
+}
 
+<<<<<<< HEAD
     CLAUDE_LOG="$EXP_DIR/claude_output.log"
     # Sauvegarder le prompt pour debug
     printf '%s' "$CLAUDE_PROMPT" > "$EXP_DIR/claude_prompt.txt"
@@ -381,22 +434,23 @@ PROMPT_EOF
     CHILD_PID=0
     [[ "$STOPPING" -eq 1 ]] && exit 0
     tail -5 "$CLAUDE_LOG" 2>/dev/null || true
+=======
+# --- Subcommand dispatch ---
+usage() {
+    cat <<EOF
+Usage:
+  $0 list
+  $0 new <name>
+  $0 run <project> [--max N]
+EOF
+    exit 1
+}
+>>>>>>> 6889b79 (feat(ralph): rewrite as subcommand dispatcher with list + new)
 
-    # Vérifier que train.py est syntaxiquement valide avant de lancer
-    if ! uv run python -c "import ast; ast.parse(open('$ROOT/train.py').read())" 2>/dev/null; then
-        echo ">>> SYNTAX ERROR in train.py — skipping run"
-        cp "$BEST_TRAIN" "$ROOT/train.py"
-        DESC="syntax error"
-        if [[ -f "$EXP_DIR/report.md" ]]; then
-            DESC=$(head -1 "$EXP_DIR/report.md" | sed 's/^#* *//' | tr '\t' ' ' | cut -c1-120)
-        fi
-        log_result "$NUM" "0.000000" "0" "crash" "$DESC (syntax error)"
-        log_run_end "$NUM" "0.000000" "crash" "$DESC (syntax error)"
-        echo "========================================="
-        echo ""
-        continue
-    fi
+[[ $# -lt 1 ]] && usage
+SUBCMD="$1"; shift
 
+<<<<<<< HEAD
     # Sauvegarder la version de train.py avant le run
     cp "$ROOT/train.py" "$EXP_DIR/train.py"
 
@@ -538,3 +592,11 @@ PROMPT_EOF
     echo "========================================="
     echo ""
 done
+=======
+case "$SUBCMD" in
+    list) cmd_list "$@" ;;
+    new)  cmd_new "$@" ;;
+    run)  cmd_run "$@" ;;
+    *)    usage ;;
+esac
+>>>>>>> 6889b79 (feat(ralph): rewrite as subcommand dispatcher with list + new)
