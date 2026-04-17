@@ -6,13 +6,55 @@
 
 The idea: give an AI agent a small but real LLM training setup and let it experiment autonomously overnight. It modifies the code, trains for 5 minutes, checks if the result improved, keeps or discards, and repeats. You wake up in the morning to a log of experiments and (hopefully) a better model. The training code here is a simplified single-GPU implementation of [nanochat](https://github.com/karpathy/nanochat). The core idea is that you're not touching any of the Python files like you normally would as a researcher. Instead, you are programming the `program.md` Markdown files that provide context to the AI agents and set up your autonomous research org. The default `program.md` in this repo is intentionally kept as a bare bones baseline, though it's obvious how one would iterate on it over time to find the "research org code" that achieves the fastest research progress, how you'd add more agents to the mix, etc. A bit more context on this project is here in this [tweet](https://x.com/karpathy/status/2029701092347630069).
 
+## Features (RALPH fork)
+
+This fork adds **RALPH** (Research Agent Loop for Persistent Hyperoptimization) — a fully autonomous experiment orchestrator on top of the original autoresearch setup.
+
+### RALPH orchestrator (`ralph.sh`)
+
+- **Fully autonomous experiment loop** — launches Claude in a loop to propose, implement, train, and evaluate experiments without human intervention. Just `./ralph.sh` and go to sleep.
+- **Automatic crash analysis & recovery** — when a training run crashes, RALPH launches a second Claude instance to diagnose the crash (INFRA / FIX / SKIP classification). Infra crashes are retried, code bugs are auto-fixed and re-run.
+- **Best-model tracking** — keeps a `train_best.py` as the current champion. Improvements are kept, regressions are automatically reverted.
+- **Experiment history** — each experiment gets its own directory with the code snapshot (before & after), training logs, Claude's reasoning, and crash analyses. Results are logged to `results.tsv`.
+- **Run journal** (`run_logs.md`) — human-readable log of every experiment with timestamps, status, and descriptions.
+- **Remote GPU support** — run training on RunPod cloud GPUs with `./ralph.sh --remote --gpu RTX_5090`.
+- **Configurable limits** — `./ralph.sh --max 20` to cap the number of experiments.
+- **Graceful shutdown** — Ctrl+C cleanly kills all child processes (Claude, training, etc.).
+
+### Research prompt (`prompt.md`)
+
+- **Rich experiment knowledge base** — the prompt accumulates meta-lessons from 190+ experiments: what works, what doesn't, dead ends to avoid, and the current priority queue of research directions.
+- **Hardware-aware** — prompt includes GPU specs (RTX 5090 / H100), CUDA version, and known platform quirks (e.g. FP8 broken on Blackwell).
+- **Research philosophy** — enforces bold architectural experiments over timid hyperparameter tweaks, with automatic escalation rules.
+
+### Architecture improvements in `train.py`
+
+The current best model (val_bpb **1.049**, down from ~1.10 baseline) includes discoveries from 190+ automated experiments:
+
+- **Hybrid local/global attention** — middle layers use chunkwise linear attention with learned per-head exponential decay (RetNet/GLA-inspired), bookend layers use full softmax SDPA. Best of both worlds: O(1) memory per chunk + sharp global attention where it matters.
+- **RetNet-style intra-chunk attention** — softmax causal attention with learned log-decay positional bias (ALiBi-style) inside chunks, linear recurrence across chunks.
+- **Non-uniform MLP expansion** — early layers get 1.5x expansion, late layers get 4.5x. Same total FLOPs as uniform 3x, better performance.
+- **Value Embedding (VE) bookend** — first and last layers get shared value embeddings with learned per-head gating (ResFormer-inspired).
+- **U-Net skip connections** — early layer outputs are fed to mirror late layers via learned skip lambdas.
+- **Multi-scale RoPE** — per-head base frequencies (2500, 10000, 40000, 160000) for multi-resolution positional encoding.
+- **RWKV-style token shift** — learnable per-channel mixing of current and previous token for K/V inputs.
+- **Sparse attention gate** — per-head output gating from a small subset of input dimensions (near-square matrix for Muon optimizer).
+- **Dynamic attention temperature** — input-dependent per-head Q scaling after QK-norm.
+- **Logit softcap** — `tanh(logits/13)*13` for gradient flow stability.
+- **Z-loss** — PaLM-style partition function penalty (`1e-4`) for logit stability.
+- **x0 residual injection** — per-layer learned mixing of normalized embedding into the residual stream.
+- **MuonAdamW optimizer** — Muon (polar express orthogonalization + NorMuon variance reduction) for matrix params, AdamW for embeddings/scalars. Fully `torch.compile`-friendly with fused kernels.
+- **Cautious weight decay** — Muon applies weight decay only where gradient and parameter signs agree.
+- **Linear warmdown schedule** — 70% of training time spent in LR cooldown to a 10% floor.
+
 ## How it works
 
 The repo is deliberately kept small and only really has a three files that matter:
 
 - **`prepare.py`** — fixed constants, one-time data prep (downloads training data, trains a BPE tokenizer), and runtime utilities (dataloader, evaluation). Not modified.
 - **`train.py`** — the single file the agent edits. Contains the full GPT model, optimizer (Muon + AdamW), and training loop. Everything is fair game: architecture, hyperparameters, optimizer, batch size, etc. **This file is edited and iterated on by the agent**.
-- **`program.md`** — baseline instructions for one agent. Point your agent here and let it go. **This file is edited and iterated on by the human**.
+- **`prompt.md`** — agent instructions and accumulated research knowledge. **This file is edited and iterated on by both the human and the agent**.
+- **`ralph.sh`** — autonomous experiment orchestrator. Runs the full propose → train → evaluate → keep/revert loop in a bash script. **This is the main entry point for autonomous research**.
 
 By design, training runs for a **fixed 5-minute time budget** (wall clock, excluding startup/compilation), regardless of the details of your compute. The metric is **val_bpb** (validation bits per byte) — lower is better, and vocab-size-independent so architectural changes are fairly compared.
 
@@ -20,7 +62,7 @@ If you are new to neural networks, this ["Dummy's Guide"](https://x.com/hooeem/s
 
 ## Quick start
 
-**Requirements:** A single NVIDIA GPU (tested on H100), Python 3.10+, [uv](https://docs.astral.sh/uv/).
+**Requirements:** A single NVIDIA GPU (tested on H100 and RTX 5090), Python 3.10+, [uv](https://docs.astral.sh/uv/), [Claude Code](https://claude.com/claude-code).
 
 ```bash
 
@@ -41,21 +83,50 @@ If the above commands all work ok, your setup is working and you can go into aut
 
 ## Running the agent
 
+### Option 1: RALPH (fully autonomous)
+
+```bash
+# Run experiments indefinitely (Ctrl+C to stop)
+./ralph.sh
+
+# Run at most 20 experiments
+./ralph.sh --max 20
+
+# Run on a remote RunPod GPU
+./ralph.sh --remote --gpu RTX_5090
+```
+
+RALPH will:
+1. Launch Claude to read the research history and propose an experiment
+2. Claude modifies `train.py` with its idea
+3. RALPH trains the model for 5 minutes
+4. If the result improves, keep it. Otherwise, revert.
+5. If training crashes, auto-diagnose and potentially fix & retry.
+6. Repeat.
+
+### Option 2: Manual (original approach)
+
 Simply spin up your Claude/Codex or whatever you want in this repo (and disable all permissions), then you can prompt something like:
 
 ```
-Hi have a look at program.md and let's kick off a new experiment! let's do the setup first.
+Hi have a look at prompt.md and let's kick off a new experiment! let's do the setup first.
 ```
 
-The `program.md` file is essentially a super lightweight "skill".
+The `prompt.md` file is essentially a super lightweight "skill".
 
 ## Project structure
 
 ```
-prepare.py      — constants, data prep + runtime utilities (do not modify)
-train.py        — model, optimizer, training loop (agent modifies this)
-program.md      — agent instructions
-pyproject.toml  — dependencies
+prepare.py         — constants, data prep + runtime utilities (do not modify)
+train.py           — model, optimizer, training loop (agent modifies this)
+train_best.py      — current best version of train.py (auto-managed by ralph.sh)
+prompt.md          — agent instructions + accumulated research knowledge
+ralph.sh           — autonomous experiment orchestrator
+train_remote.py    — RunPod remote training wrapper
+pyproject.toml     — dependencies
+experiments/       — one directory per experiment (code snapshots, logs, reports)
+  results.tsv      — tab-separated experiment results
+run_logs.md        — human-readable experiment journal
 ```
 
 ## Design choices
@@ -63,6 +134,7 @@ pyproject.toml  — dependencies
 - **Single file to modify.** The agent only touches `train.py`. This keeps the scope manageable and diffs reviewable.
 - **Fixed time budget.** Training always runs for exactly 5 minutes, regardless of your specific platform. This means you can expect approx 12 experiments/hour and approx 100 experiments while you sleep. There are two upsides of this design decision. First, this makes experiments directly comparable regardless of what the agent changes (model size, batch size, architecture, etc). Second, this means that autoresearch will find the most optimal model for your platform in that time budget. The downside is that your runs (and results) become not comparable to other people running on other compute platforms.
 - **Self-contained.** No external dependencies beyond PyTorch and a few small packages. No distributed training, no complex configs. One GPU, one file, one metric.
+- **Crash resilience.** RALPH automatically classifies crashes (infra vs code bug vs fundamentally broken) and retries or fixes accordingly. No wasted experiment slots.
 
 ## Platform support
 

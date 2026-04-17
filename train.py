@@ -37,6 +37,7 @@ class GPTConfig:
     n_kv_head: int = 6
     n_embd: int = 768
     window_pattern: str = "SSSL"
+    rope_bases: tuple = (10000,)  # per-head RoPE base frequencies (1 = all same, n_head = per-head)
 
 
 def norm(x):
@@ -44,8 +45,8 @@ def norm(x):
 
 
 def has_ve(layer_idx, n_layer):
-    """Returns True if layer should have Value Embedding (last layer only)."""
-    return layer_idx == n_layer - 1
+    """Returns True if layer should have Value Embedding (first and last layer)."""
+    return layer_idx == 0 or layer_idx == n_layer - 1
 
 
 def apply_rotary_emb(x, cos, sin):
@@ -70,27 +71,114 @@ class CausalSelfAttention(nn.Module):
         self.c_k = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.c_v = nn.Linear(self.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.c_proj = nn.Linear(self.n_embd, self.n_embd, bias=False)
-        self.ve_gate_channels = 32
-        self.ve_gate = nn.Linear(self.ve_gate_channels, self.n_kv_head, bias=False) if has_ve(layer_idx, config.n_layer) else None
+        self.ve_gate = nn.Linear(self.n_embd, self.n_kv_head, bias=False) if has_ve(layer_idx, config.n_layer) else None
+        # Sparse attention gate: per-head output gating using a small subset of input dims
+        # (modded-nanogpt PR#117: sparse input makes the gate matrix near-square for Muon)
+        self.gate_dim = 2 * self.n_head
+        self.attn_gate = nn.Linear(self.gate_dim, self.n_head, bias=False)
+        # Dynamic attention temperature: input-dependent per-head Q scaling after QK-norm
+        # Restores per-token attention sharpness control removed by QK-norm
+        self.attn_temp = nn.Linear(self.gate_dim, self.n_head, bias=False)
+        # RWKV-style token shift: learnable per-channel mixing for K/V inputs
+        self.time_mix_k = nn.Parameter(torch.empty(self.n_embd))
+        self.time_mix_v = nn.Parameter(torch.empty(self.n_embd))
+        # Chunkwise linear attention with decay for middle layers (replaces softmax SDPA)
+        n = config.n_layer
+        # Interleaved local/global: [G,L,G,L,L,G,L,G] for depth=8
+        # Global layers refresh full-sequence context between local layers
+        self.local_attn = (min(layer_idx, n - 1 - layer_idx) % 2 == 1)
+        self.block_size = 256  # chunk size for chunkwise linear attention
+        if self.local_attn:
+            self.decay_rate = nn.Parameter(torch.empty(self.n_head))
+            # Cross-chunk gate: input-dependent per-head gating of cross-chunk recurrent contribution
+            # Allows model to suppress stale recurrent state at topic/document boundaries
+            self.cross_gate = nn.Linear(self.gate_dim, self.n_head, bias=False)
 
     def forward(self, x, ve, cos_sin, window_size):
         B, T, C = x.size()
+        # RWKV-style token shift: mix current token with previous token for K/V
+        x_prev = torch.cat([x[:, :1, :], x[:, :-1, :]], dim=1)
+        mk = torch.sigmoid(self.time_mix_k)
+        mv = torch.sigmoid(self.time_mix_v)
+        x_k = x * mk + x_prev * (1 - mk)
+        x_v = x * mv + x_prev * (1 - mv)
         q = self.c_q(x).view(B, T, self.n_head, self.head_dim)
-        k = self.c_k(x).view(B, T, self.n_kv_head, self.head_dim)
-        v = self.c_v(x).view(B, T, self.n_kv_head, self.head_dim)
+        k = self.c_k(x_k).view(B, T, self.n_kv_head, self.head_dim)
+        v = self.c_v(x_v).view(B, T, self.n_kv_head, self.head_dim)
 
         # Value residual (ResFormer): mix in value embedding with input-dependent gate per head
         if ve is not None:
             ve = ve.view(B, T, self.n_kv_head, self.head_dim)
-            gate = 2 * torch.sigmoid(self.ve_gate(x[..., :self.ve_gate_channels]))
+            gate = 2 * torch.sigmoid(self.ve_gate(x))
             v = v + gate.unsqueeze(-1) * ve
 
         cos, sin = cos_sin
         q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)
         q, k = norm(q), norm(k)
+        # Dynamic attention temperature: per-head per-position Q scaling
+        # Zero-init → sigmoid(0)=0.5 → temp=2*0.5=1.0 (neutral start)
+        temp = 2 * torch.sigmoid(self.attn_temp(x[:, :, :self.gate_dim]))  # (B, T, n_head)
+        q = q * temp.unsqueeze(-1)  # (B, T, H, D) * (B, T, H, 1)
 
         if _USE_FA3:
             y = fa3.flash_attn_func(q, k, v, causal=True, window_size=window_size)
+        elif self.local_attn:
+            # Chunkwise linear attention with learned per-head decay (RetNet/GLA-inspired)
+            # Replaces block-diagonal SDPA: full-sequence context via recurrent state
+            BS = self.block_size
+            n_blocks = T // BS
+            H, D = self.n_head, self.head_dim
+            gamma = torch.sigmoid(self.decay_rate)  # (H,) per-head decay
+            q2 = q.transpose(1, 2)  # (B, H, T, D)
+            k2 = k.transpose(1, 2)
+            v2 = v.transpose(1, 2)
+            if self.n_kv_head < self.n_head:
+                rep = self.n_head // self.n_kv_head
+                k2 = k2.repeat_interleave(rep, dim=1)
+                v2 = v2.repeat_interleave(rep, dim=1)
+            # Reshape into chunks: (B, H, n_blocks, BS, D)
+            q2 = q2.reshape(B, H, n_blocks, BS, D)
+            k2 = k2.reshape(B, H, n_blocks, BS, D)
+            v2 = v2.reshape(B, H, n_blocks, BS, D)
+            # Precompute decay masks in float32 for numerical precision
+            gf = gamma.float()
+            pos = torch.arange(BS, device=q.device, dtype=torch.float32)
+            rel = pos[:, None] - pos[None, :]  # (BS, BS)
+            causal_bool = (rel >= 0)  # (BS, BS) boolean for softmax masking
+            # Log-decay as additive bias for softmax (learned ALiBi-style per-head locality)
+            log_decay_bias = (rel.clamp(min=0).unsqueeze(0) * gf.log()[:, None, None]).to(q.dtype)  # (H, BS, BS)
+            cross_decay = gf[:, None, None].pow(pos[None, :, None] + 1).to(q.dtype)  # (H, BS, 1)
+            key_decay = gf[:, None, None].pow((BS - 1 - pos)[None, :, None]).to(q.dtype)  # (H, BS, 1)
+            chunk_decay = gf.pow(BS).to(q.dtype)  # (H,)
+            scale = D ** -0.5
+            # Recurrent KV state: (B, H, D, D)
+            S = q.new_zeros(B, H, D, D)
+            intra_chunks = []
+            cross_chunks = []
+            for c_idx in range(n_blocks):
+                qc = q2[:, :, c_idx]  # (B, H, BS, D)
+                kc = k2[:, :, c_idx]
+                vc = v2[:, :, c_idx]
+                # Intra-chunk: softmax causal attention with log-decay positional bias
+                scores = torch.matmul(qc, kc.transpose(-1, -2)) * scale  # (B, H, BS, BS)
+                scores = scores + log_decay_bias  # per-head learned locality bias
+                scores = scores.masked_fill(~causal_bool, float('-inf'))
+                intra = torch.matmul(F.softmax(scores, dim=-1), vc)  # (B, H, BS, D)
+                # Cross-chunk: query accumulated state with position-dependent decay
+                cross = torch.matmul(qc, S) * cross_decay  # (B, H, BS, D)
+                intra_chunks.append(intra)
+                cross_chunks.append(cross)
+                # Update state: decay old + accumulate new chunk's KV outer products
+                kc_w = kc * key_decay  # position-weighted keys
+                S = chunk_decay[:, None, None] * S + torch.matmul(kc_w.transpose(-1, -2), vc) * scale
+            y_intra = torch.stack(intra_chunks, dim=2).reshape(B, H, T, D)
+            y_cross = torch.stack(cross_chunks, dim=2).reshape(B, H, T, D)
+            y_intra = y_intra.transpose(1, 2).contiguous().view(B, T, self.n_head, self.head_dim)
+            y_cross = y_cross.transpose(1, 2).contiguous().view(B, T, self.n_head, self.head_dim)
+            # Pathway-specific gating: cross-chunk gate modulates recurrent contribution
+            # before combining with intra-chunk, giving per-position control over local vs global
+            cross_g = 2 * torch.sigmoid(self.cross_gate(x[:, :, :self.gate_dim]))  # (B, T, n_head)
+            y = y_intra + cross_g.unsqueeze(-1) * y_cross
         else:
             # SDPA path: (B, T, H, D) -> (B, H, T, D)
             q2 = q.transpose(1, 2)
@@ -103,16 +191,20 @@ class CausalSelfAttention(nn.Module):
                 v2 = v2.repeat_interleave(rep, dim=1)
             y = F.scaled_dot_product_attention(q2, k2, v2, is_causal=True, enable_gqa=False)
             y = y.transpose(1, 2)
+        # Sparse attention gate: per-head gating from first gate_dim dims of input
+        attn_g = 2 * torch.sigmoid(self.attn_gate(x[:, :, :self.gate_dim]))  # (B, T, n_head)
+        y = y * attn_g.unsqueeze(-1)  # (B, T, H, D) * (B, T, H, 1)
         y = y.contiguous().view(B, T, -1)
         y = self.c_proj(y)
         return y
 
 
 class MLP(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, expansion=3):
         super().__init__()
-        self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
-        self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
+        hidden = int(expansion * config.n_embd)
+        self.c_fc = nn.Linear(config.n_embd, hidden, bias=False)
+        self.c_proj = nn.Linear(hidden, config.n_embd, bias=False)
 
     def forward(self, x):
         x = self.c_fc(x)
@@ -125,7 +217,11 @@ class Block(nn.Module):
     def __init__(self, config, layer_idx):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
-        self.mlp = MLP(config)
+        # Non-uniform MLP: early layers (0..half-1) get 1.5x, late layers (half..n-1) get 4.5x
+        # Total MLP params/FLOPs identical to uniform 3x
+        half = config.n_layer // 2
+        expansion = 1.5 if layer_idx < half else 4.5
+        self.mlp = MLP(config, expansion)
 
     def forward(self, x, ve, cos_sin, window_size):
         x = x + self.attn(norm(x), ve, cos_sin, window_size)
@@ -145,6 +241,7 @@ class GPT(nn.Module):
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         self.resid_lambdas = nn.Parameter(torch.ones(config.n_layer))
         self.x0_lambdas = nn.Parameter(torch.zeros(config.n_layer))
+        self.skip_lambdas = nn.Parameter(torch.zeros(config.n_layer // 2))
         # Value embeddings
         head_dim = config.n_embd // config.n_head
         kv_dim = config.n_kv_head * head_dim
@@ -152,7 +249,17 @@ class GPT(nn.Module):
             str(i): nn.Embedding(config.vocab_size, kv_dim)
             for i in range(config.n_layer) if has_ve(i, config.n_layer)
         })
-        # Rotary embeddings
+        # Tie VE weights between first and last layer (shared embedding, separate gates)
+        if config.n_layer > 1 and '0' in self.value_embeds:
+            self.value_embeds['0'].weight = self.value_embeds[str(config.n_layer - 1)].weight
+        # Rotary embeddings (multi-scale: per-head base frequencies)
+        bases = list(config.rope_bases)
+        if len(bases) == 1:
+            bases = bases * config.n_head
+        assert len(bases) == config.n_head, f"rope_bases length {len(bases)} != n_head {config.n_head}"
+        if len(set(bases)) > 1:
+            assert config.n_kv_head == config.n_head, "Multi-scale RoPE requires n_kv_head == n_head"
+        self.rope_bases = bases
         self.rotary_seq_len = config.sequence_len * 10
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
         self.register_buffer("cos", cos, persistent=False)
@@ -176,6 +283,7 @@ class GPT(nn.Module):
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)
         self.x0_lambdas.fill_(0.1)
+        self.skip_lambdas.fill_(0.05)
         # Value embeddings
         for ve in self.value_embeds.values():
             torch.nn.init.uniform_(ve.weight, -s, s)
@@ -183,6 +291,18 @@ class GPT(nn.Module):
         for block in self.transformer.h:
             if block.attn.ve_gate is not None:
                 torch.nn.init.zeros_(block.attn.ve_gate.weight)
+            torch.nn.init.zeros_(block.attn.attn_gate.weight)
+            torch.nn.init.zeros_(block.attn.attn_temp.weight)
+            if block.attn.local_attn:
+                torch.nn.init.zeros_(block.attn.cross_gate.weight)
+        # Token shift mixing: init to 0 so sigmoid(0)=0.5 = equal mix of current and previous
+        for block in self.transformer.h:
+            block.attn.time_mix_k.fill_(0.0)
+            block.attn.time_mix_v.fill_(0.0)
+        # Linear attention decay rate: init gamma ≈ 0.982 for ~55-token effective context
+        for block in self.transformer.h:
+            if block.attn.local_attn:
+                block.attn.decay_rate.fill_(4.0)
         # Rotary embeddings
         head_dim = self.config.n_embd // self.config.n_head
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
@@ -192,16 +312,30 @@ class GPT(nn.Module):
         for ve in self.value_embeds.values():
             ve.to(dtype=torch.bfloat16)
 
-    def _precompute_rotary_embeddings(self, seq_len, head_dim, base=10000, device=None):
+    def _precompute_rotary_embeddings(self, seq_len, head_dim, device=None):
         if device is None:
             device = self.transformer.wte.weight.device
-        channel_range = torch.arange(0, head_dim, 2, dtype=torch.float32, device=device)
-        inv_freq = 1.0 / (base ** (channel_range / head_dim))
         t = torch.arange(seq_len, dtype=torch.float32, device=device)
-        freqs = torch.outer(t, inv_freq)
-        cos, sin = freqs.cos(), freqs.sin()
-        cos, sin = cos.bfloat16(), sin.bfloat16()
-        cos, sin = cos[None, :, None, :], sin[None, :, None, :]
+        channel_range = torch.arange(0, head_dim, 2, dtype=torch.float32, device=device)
+        bases = self.rope_bases
+        if len(set(bases)) == 1:
+            # All same base: original efficient path, shared across heads
+            inv_freq = 1.0 / (bases[0] ** (channel_range / head_dim))
+            freqs = torch.outer(t, inv_freq)
+            cos, sin = freqs.cos(), freqs.sin()
+            cos, sin = cos.bfloat16(), sin.bfloat16()
+            cos, sin = cos[None, :, None, :], sin[None, :, None, :]
+        else:
+            # Multi-scale: per-head base frequencies
+            cos_list, sin_list = [], []
+            for base in bases:
+                inv_freq = 1.0 / (base ** (channel_range / head_dim))
+                freqs = torch.outer(t, inv_freq)
+                cos_list.append(freqs.cos())
+                sin_list.append(freqs.sin())
+            # [n_head, seq_len, d/2] -> [1, seq_len, n_head, d/2]
+            cos = torch.stack(cos_list, dim=1).unsqueeze(0).bfloat16()
+            sin = torch.stack(sin_list, dim=1).unsqueeze(0).bfloat16()
         return cos, sin
 
     def _compute_window_sizes(self, config):
@@ -238,7 +372,7 @@ class GPT(nn.Module):
         value_embeds = sum(p.numel() for p in self.value_embeds.parameters())
         lm_head = sum(p.numel() for p in self.lm_head.parameters())
         transformer_matrices = sum(p.numel() for p in self.transformer.h.parameters())
-        scalars = self.resid_lambdas.numel() + self.x0_lambdas.numel()
+        scalars = self.resid_lambdas.numel() + self.x0_lambdas.numel() + self.skip_lambdas.numel()
         total = wte + value_embeds + lm_head + transformer_matrices + scalars
         return {
             'wte': wte, 'value_embeds': value_embeds, 'lm_head': lm_head,
@@ -248,23 +382,28 @@ class GPT(nn.Module):
     def setup_optimizer(self, unembedding_lr=0.004, embedding_lr=0.2, matrix_lr=0.02,
                         weight_decay=0.0, adam_betas=(0.8, 0.95), scalar_lr=0.5):
         model_dim = self.config.n_embd
-        matrix_params = list(self.transformer.h.parameters())
+        all_h_params = list(self.transformer.h.parameters())
+        matrix_params = [p for p in all_h_params if p.ndim >= 2]
+        time_mix_params = [p for p in all_h_params if p.ndim == 1]
         value_embeds_params = list(self.value_embeds.parameters())
         embedding_params = list(self.transformer.wte.parameters())
         lm_head_params = list(self.lm_head.parameters())
         resid_params = [self.resid_lambdas]
         x0_params = [self.x0_lambdas]
-        assert len(list(self.parameters())) == (len(matrix_params) + len(embedding_params) +
-            len(lm_head_params) + len(value_embeds_params) + len(resid_params) + len(x0_params))
+        skip_params = [self.skip_lambdas]
+        assert len(list(self.parameters())) == (len(matrix_params) + len(time_mix_params) + len(embedding_params) +
+            len(lm_head_params) + len(value_embeds_params) + len(resid_params) + len(x0_params) + len(skip_params))
         # Scale LR ∝ 1/√dmodel (tuned at 768 dim)
         dmodel_lr_scale = (model_dim / 768) ** -0.5
         print(f"Scaling AdamW LRs by 1/sqrt({model_dim}/768) = {dmodel_lr_scale:.6f}")
         param_groups = [
             dict(kind='adamw', params=lm_head_params, lr=unembedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.0),
             dict(kind='adamw', params=embedding_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.0),
-            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.0),
+            dict(kind='adamw', params=value_embeds_params, lr=embedding_lr * dmodel_lr_scale, betas=adam_betas, eps=1e-10, weight_decay=0.002),
             dict(kind='adamw', params=resid_params, lr=scalar_lr * 0.01, betas=adam_betas, eps=1e-10, weight_decay=0.0),
             dict(kind='adamw', params=x0_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
+            dict(kind='adamw', params=skip_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
+            dict(kind='adamw', params=time_mix_params, lr=scalar_lr, betas=(0.96, 0.95), eps=1e-10, weight_decay=0.0),
         ]
         for shape in sorted({p.shape for p in matrix_params}):
             group_params = [p for p in matrix_params if p.shape == shape]
@@ -285,13 +424,23 @@ class GPT(nn.Module):
         x = self.transformer.wte(idx)
         x = norm(x)
         x0 = x
+        n = self.config.n_layer
+        half = n // 2
+        skip_states = [torch.empty(0)] * half  # placeholders for torch.compile
         for i, block in enumerate(self.transformer.h):
             x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
+            # U-Net skip: late layers receive skip from mirror early layers
+            mirror = n - 1 - i
+            if i >= half:
+                x = x + self.skip_lambdas[mirror] * skip_states[mirror]
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
             x = block(x, ve, cos_sin, self.window_sizes[i])
+            # U-Net skip: early layers save their output
+            if i < half:
+                skip_states[i] = x
         x = norm(x)
 
-        softcap = 15
+        softcap = 13
         logits = self.lm_head(x)
         logits = logits.float()
         logits = softcap * torch.tanh(logits / softcap)
@@ -299,6 +448,11 @@ class GPT(nn.Module):
         if targets is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
                                    ignore_index=-1, reduction=reduction)
+            if reduction == 'mean':
+                # Z-loss: penalize large partition function for training stability (PaLM)
+                logz = torch.logsumexp(logits, dim=-1)
+                z_loss = 1e-4 * logz.square().mean()
+                loss = loss + z_loss
             return loss
         return logits
 
@@ -445,6 +599,7 @@ class MuonAdamW(torch.optim.Optimizer):
 ASPECT_RATIO = 64       # model_dim = depth * ASPECT_RATIO
 HEAD_DIM = 128          # target head dimension for attention
 WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
+ROPE_BASES = (2500, 10000, 40000, 160000)  # per-head RoPE base frequencies (geometric r=4)
 
 # Optimization
 TOTAL_BATCH_SIZE = 2**18 # ~262K tokens per optimizer step (2x more steps in 5 min)
@@ -455,8 +610,8 @@ SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
-WARMDOWN_RATIO = 0.6    # fraction of time budget for LR warmdown
-FINAL_LR_FRAC = 0.0     # final LR as fraction of initial
+WARMDOWN_RATIO = 0.7    # fraction of time budget for LR warmdown
+FINAL_LR_FRAC = 0.1     # final LR as fraction of initial (LR floor)
 
 # Model size
 DEPTH = 8               # number of transformer layers
@@ -496,6 +651,7 @@ def build_model_config(depth):
         sequence_len=MAX_SEQ_LEN, vocab_size=vocab_size,
         n_layer=depth, n_head=num_heads, n_kv_head=num_heads, n_embd=model_dim,
         window_pattern=WINDOW_PATTERN,
+        rope_bases=ROPE_BASES,
     )
 
 config = build_model_config(DEPTH)
