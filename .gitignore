@@ -19,9 +19,6 @@ AGENTS.md
 # Experimental code/artifacts
 dev/
 
-# Results file
-projects/*/experiments/results.tsv
-
 # Ralph experiment artifacts (per-project)
 projects/*/experiments/
 projects/*/train_best.py
