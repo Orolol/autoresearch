@@ -83,10 +83,10 @@ class CausalSelfAttention(nn.Module):
         self.time_mix_k = nn.Parameter(torch.empty(self.n_embd))
         self.time_mix_v = nn.Parameter(torch.empty(self.n_embd))
         # Chunkwise linear attention with decay for middle layers (replaces softmax SDPA)
+        # DISABLED on non-FA3 hardware (RTX 5090): Python loop is slower than SDPA and
+        # the complex path has never been validated to beat simple SDPA baseline on Blackwell.
         n = config.n_layer
-        # Interleaved local/global: [G,L,G,L,L,G,L,G] for depth=8
-        # Global layers refresh full-sequence context between local layers
-        self.local_attn = (min(layer_idx, n - 1 - layer_idx) % 2 == 1)
+        self.local_attn = False
         self.block_size = 256  # chunk size for chunkwise linear attention
         if self.local_attn:
             self.decay_rate = nn.Parameter(torch.empty(self.n_head))

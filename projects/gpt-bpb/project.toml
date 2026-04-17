@@ -9,3 +9,10 @@ extra_keys = ["peak_vram_mb"]
 [run]
 train_cmd = "uv run train.py"
 timeout_s = 600
+
+# Optional: remote execution via RunPod Flash (see train_remote.py).
+# `deps` are installed on the worker image. `prepare_timeout_s` caps prepare.py
+# on the remote side (data download + tokenizer training).
+[remote]
+deps = ["torch", "kernels", "numpy", "pyarrow", "requests", "rustbpe", "tiktoken"]
+prepare_timeout_s = 600

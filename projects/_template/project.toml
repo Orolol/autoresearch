@@ -9,3 +9,11 @@ extra_keys = []
 [run]
 train_cmd = "uv run train.py"
 timeout_s = 600
+
+# Optional: remote execution via RunPod Flash (see train_remote.py).
+# Only used when ralph.sh is invoked with --remote. `deps` are installed on
+# the worker image; include everything prepare.py and train.py need to import.
+# `prepare_timeout_s` caps prepare.py on the remote worker (data + tokenizer).
+[remote]
+deps = ["torch", "numpy"]
+prepare_timeout_s = 600
