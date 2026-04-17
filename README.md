@@ -4,7 +4,7 @@
 
 *One day, frontier AI research used to be done by meat computers in between eating, sleeping, having other fun, and synchronizing once in a while using sound wave interconnect in the ritual of "group meeting". That era is long gone. Research is now entirely the domain of autonomous swarms of AI agents running across compute cluster megastructures in the skies. The agents claim that we are now in the 10,205th generation of the code base, in any case no one could tell if that's right or wrong as the "code" is now a self-modifying binary that has grown beyond human comprehension. This repo is the story of how it all began. -@karpathy, March 2026*.
 
-The idea: give an AI agent a small but real LLM training setup and let it experiment autonomously overnight. It modifies the code, trains for 5 minutes, checks if the result improved, keeps or discards, and repeats. You wake up in the morning to a log of experiments and (hopefully) a better model. The training code here is a simplified single-GPU implementation of [nanochat](https://github.com/karpathy/nanochat). The core idea is that you're not touching any of the Python files like you normally would as a researcher. Instead, you are programming the `program.md` Markdown files that provide context to the AI agents and set up your autonomous research org. The default `program.md` in this repo is intentionally kept as a bare bones baseline, though it's obvious how one would iterate on it over time to find the "research org code" that achieves the fastest research progress, how you'd add more agents to the mix, etc. A bit more context on this project is here in this [tweet](https://x.com/karpathy/status/2029701092347630069).
+The idea: give an AI agent a small but real LLM training setup and let it experiment autonomously overnight. It modifies the code, trains for 5 minutes, checks if the result improved, keeps or discards, and repeats. You wake up in the morning to a log of experiments and (hopefully) a better model. The training code here is a simplified single-GPU implementation of [nanochat](https://github.com/karpathy/nanochat). The core idea is that you're not touching any of the Python files like you normally would as a researcher. Instead, you are programming the `prompt.md` Markdown files that provide context to the AI agents and set up your autonomous research org. The default `prompt.md` in each project is intentionally kept as a bare bones baseline, though it's obvious how one would iterate on it over time to find the "research org code" that achieves the fastest research progress, how you'd add more agents to the mix, etc. A bit more context on this project is here in this [tweet](https://x.com/karpathy/status/2029701092347630069).
 
 ## Features (RALPH fork)
 
@@ -73,14 +73,15 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv sync
 
 # 3. Download data and train tokenizer (one-time, ~2 min)
-uv run prepare.py
+uv run projects/gpt-bpb/prepare.py
 
 # 4. Manually run a single training experiment (~5 min)
-uv run train.py
+uv run projects/gpt-bpb/train.py
 ```
 
 If the above commands all work ok, your setup is working and you can go into autonomous research mode.
 
+<<<<<<< HEAD
 ## Running the agent
 
 ### Option 1: RALPH (fully autonomous)
@@ -114,40 +115,71 @@ Hi have a look at prompt.md and let's kick off a new experiment! let's do the se
 
 The `prompt.md` file is essentially a super lightweight "skill".
 
+=======
+>>>>>>> 9720461 (docs: update README for multi-project layout)
 ## Running autonomously with `ralph.sh`
 
-This fork ships a bash orchestrator that runs the experiment loop fully unattended. It spawns Claude Code in a loop (one call per experiment), keeps a canonical `train_best.py`, logs every run to `experiments/` and `run_logs.md`, and only promotes a change when `val_bpb` improves.
+The repo ships a bash orchestrator that runs the experiment loop fully unattended. It dispatches on subcommands and scopes everything to a single project under `projects/`.
 
 ```bash
-./ralph.sh              # infinite loop
-./ralph.sh --max 20     # stop after 20 experiments
+./ralph.sh list                         # show projects and their current best score
+./ralph.sh new <name>                   # scaffold projects/<name>/ from _template
+./ralph.sh run <project> [--max N]      # run the RALPH loop
 ```
 
-Requirements: `claude` CLI (Claude Code) on `$PATH`, `uv`, and a baseline that trains cleanly. Press Ctrl+C to stop — the trap kills the current child (Claude or `train.py`) and exits cleanly.
+Requirements: `claude` CLI (Claude Code) on `$PATH`, `uv`, and a project whose `train.py` actually runs. Press Ctrl+C at any time — the trap kills the current child (Claude or `train.py`) and exits cleanly.
 
-What each iteration does:
-1. Copy `train_best.py` → `train.py` (always start from the current best)
-2. Call `claude -p` with `prompt.md` + full history (`results.tsv`, last 5 reports, `run_logs.md`) — Claude edits `train.py` only, no training
-3. Syntax-check `train.py`; revert and mark `crash` if invalid
-4. Run `uv run train.py` with a 600s timeout
-5. If `val_bpb` improved → update `train_best.py` and `best_score`; otherwise revert. Log either way to `experiments/results.tsv`.
+Each project declares its runtime contract in `project.toml`:
 
-Per-experiment artifacts land in `experiments/experiment_<N>/`: `train_before.py`, `train.py`, `prompt.md`, `run.log`, `claude_output.log`, `report.md`.
+```toml
+name = "gpt-bpb"
+description = "GPT-2 like model, minimize val_bpb on FineWeb-like data"
 
-`prompt.md` replaces `program.md` as the instruction file in this flow — edit it to steer the agent (hardware notes, exploration priorities, lessons learned across runs).
+[metric]
+key = "val_bpb"              # ralph.sh extracts "<key>:" from run.log
+direction = "minimize"       # "minimize" or "maximize"
+extra_keys = ["peak_vram_mb"]
+
+[run]
+train_cmd = "uv run train.py"
+timeout_s = 600
+```
+
+`train.py` must print `<metric.key>: <float>` (and each `extra_keys[i]: <float>`) on stdout or stderr. The last matching line wins.
+
+### What `ralph.sh run` does per iteration
+
+1. Copy `train_best.py` → `train.py` (always start from the current best).
+2. Call `claude -p` with `prompt.md` + the full project history (`results.tsv`, last 5 reports, `run_logs.md`). Claude edits `train.py` only.
+3. Syntax-check `train.py`; revert and mark `crash` if invalid.
+4. Run `train_cmd` from inside `projects/<project>/` with a hard timeout.
+5. Extract the metric (respecting `direction`). If improved → promote to `train_best.py` and update `best_score`; otherwise revert. Log either way.
+
+Per-experiment artifacts land in `projects/<project>/experiments/experiment_<N>/`: `train_before.py`, `train.py`, `prompt.md`, `run.log`, `claude_output.log`, `report.md`.
+
+### Scaffolding a new project
+
+```bash
+./ralph.sh new my-project
+```
+
+The template stubs for `prepare.py` and `train.py` both raise `NotImplementedError` — intentional, so you own the contract before the first run. Fill them in, then `./ralph.sh run my-project`.
 
 ## Project structure
 
 ```
-prepare.py        — constants, data prep + runtime utilities (do not modify)
-train.py          — model, optimizer, training loop (agent modifies this)
-train_best.py     — current best version of train.py (managed by ralph.sh)
-program.md        — agent instructions (vanilla flow)
-prompt.md         — agent instructions (ralph.sh flow)
-ralph.sh          — autonomous experiment loop
-experiments/      — per-run artifacts and results.tsv (untracked)
-run_logs.md       — human-readable journal of runs (maintained by the agent)
-pyproject.toml    — dependencies
+ralph.sh              — orchestrator (subcommands: run, new, list)
+pyproject.toml        — shared deps
+projects/
+├── _template/        — skeleton used by `ralph.sh new` (non-runnable stubs)
+└── <name>/           — one self-contained research project
+    ├── project.toml      — metric, direction, train command, timeout
+    ├── prepare.py        — data + tokenizer (manual, read-only for the agent)
+    ├── train.py          — model + training loop (the agent edits this)
+    ├── train_best.py     — current best version (managed by ralph.sh)
+    ├── prompt.md         — agent instructions for this project
+    ├── run_logs.md       — human-readable journal (maintained by the agent)
+    └── experiments/      — per-run artifacts + results.tsv + best_score
 ```
 
 ## Design choices
