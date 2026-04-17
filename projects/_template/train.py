@@ -7,6 +7,9 @@ Contract consumed by ralph.sh:
     <metric.key>: <float>         # the score for this run
     <extra_key>: <float>          # once per entry in metric.extra_keys
   The last matching line wins (same convention as the gpt-bpb project).
+- Metric lines must start at column 0. ralph.sh matches `^<key>:` —
+  prefixes like `INFO: val_bpb: 1.09` or leading whitespace will NOT
+  be detected and will be logged as a crash.
 - All paths must be relative to the project directory (this file's
   parent). ralph.sh invokes `train_cmd` with cwd set there.
 
