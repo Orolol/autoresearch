@@ -1,0 +1,7 @@
+Done. Here's the summary:
+
+**Experiment #58: Gradient clipping (max_norm=1.0)**
+
+- **Change**: Added `torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)` after gradient accumulation, before optimizer step
+- **Why**: Standard LLM practice (GPT-2/3, LLaMA, PaLM) that was completely absent from the training pipeline. Protects AdamW-optimized params (embeddings, lm_head, scalars) from gradient spikes corrupting their momentum buffers. Effectively a no-op for Muon params which already have built-in normalization.
+- **Risk**: Zero crash/OOM risk. If gradient norms are naturally < 1.0, this is a complete no-op (identical to baseline).

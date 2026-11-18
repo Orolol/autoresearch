@@ -1,0 +1,8 @@
+Good — no remaining references to the removed attribute. The change is clean: 2 lines modified (one attribute removed + line simplified, one forward pass simplified).
+
+**Summary of experiment #112:**
+
+- **Change**: Widen VE gate input from 32 to 512 channels (full hidden state)
+- **Why**: The VE gate sees only 6.25% of the representation to make gating decisions. The full hidden state should provide much richer signal for per-head VE gating, especially with multi-scale RoPE creating specialized heads.
+- **Risk**: Low — zero-init means exact baseline at step 0. Only 3840 extra params. Could be neutral if 32 dims were already sufficient.
+- **Files modified**: `train.py` (2 lines), `run_logs.md` (appended), `experiments/experiment_112/report.md` (created)

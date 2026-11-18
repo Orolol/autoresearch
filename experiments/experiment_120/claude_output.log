@@ -1,0 +1,8 @@
+Done. Experiment #120 modifies a single value: VE optimizer beta1 from 0.8 to 0.9.
+
+**Summary**:
+- **Change**: VE Adam betas `(0.8, 0.95)` → `(0.9, 0.95)` in `train.py:292`
+- **Why**: VE gets sparse gradients (2/8 layers, only in-batch tokens). Higher beta1 means smoother gradient EMA, better signal-to-noise ratio for VE parameter updates. Complements VE WD=0.002 (exp115).
+- **Risk**: Zero. Same code paths, just a different float value.
+- **If it works**: Try `(0.9, 0.99)` for even smoother second moment.
+- **If it fails**: VE optimizer is fully tuned. Move to FP8 matmuls (last "more steps" lever).

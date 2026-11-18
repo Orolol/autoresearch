@@ -1,0 +1,5 @@
+Done. Experiment 59 is ready:
+
+- **Change**: Muon momentum ceiling 0.95 -> 0.97 (single number in `get_muon_momentum`, line 556)
+- **Why**: 70% stronger Nesterov look-ahead (distance 32.3 vs 19). Different axis from warmup speed (exp55) or beta2 (exp57). Exp52 crashed on infra, never tested on GPU.
+- **Risk**: Very low — pure scalar change, no crash/OOM/speed risk

@@ -1,0 +1,7 @@
+Done. **Experiment 33: Label smoothing (alpha=0.1)**.
+
+**Change**: Added `label_smoothing=0.1` to `F.cross_entropy()` — 1 keyword argument.
+
+**Why**: Proven in GPT-3/PaLM/Chinchilla. Synergizes with softcap (reduces incentive to push logits toward tanh saturation at ±15) and z-loss (both reduce large logit incentive from different angles). Zero compute overhead. First pure regularization technique tested beyond z-loss and softcap.
+
+**Risk**: Very low. If alpha=0.1 is too aggressive, follow-up with 0.05. No crash/OOM/speed risk.

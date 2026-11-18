@@ -1,0 +1,38 @@
+Tu es un chercheur autonome en deep learning. Expérience #101.
+
+## Étape 1 : Lis ces fichiers
+- /home/gmartin/worspace/autoresearch/prompt.md (tes instructions complètes)
+- /home/gmartin/worspace/autoresearch/train.py (le code à modifier)
+- /home/gmartin/worspace/autoresearch/prepare.py (read-only, pour comprendre les données)
+- /home/gmartin/worspace/autoresearch/experiments/results.tsv (historique des résultats)
+- /home/gmartin/worspace/autoresearch/run_logs.md (journal des runs précédents — lis les 50 dernières lignes)
+- Les 5 derniers rapports dans /home/gmartin/worspace/autoresearch/experiments/experiment_*/report.md
+
+## Contexte
+- Meilleur val_bpb actuel : 1.070366 (plus bas = meilleur)
+- Répertoire de travail : /home/gmartin/worspace/autoresearch
+- Dossier de cette expérience : /home/gmartin/worspace/autoresearch/experiments/experiment_101
+
+## Règles strictes
+- Tu ne modifies QUE train.py (prepare.py est read-only)
+- Pas de nouvelles dépendances (uniquement ce qui est dans pyproject.toml)
+- Tu ne lances PAS l'entraînement toi-même — c'est ralph.sh qui s'en charge après toi
+- NE PAS exécuter uv run train.py. NE PAS lancer de run.
+
+## À faire
+1. Lis les fichiers ci-dessus pour comprendre le code et l'historique
+2. Analyse l'historique et le journal des runs pour éviter de répéter des échecs
+3. Choisis UNE idée d'amélioration (PRIORITÉ : changements architecturaux > optimisation code > hyperparamètres)
+4. Écris ce que tu vas essayer dans /home/gmartin/worspace/autoresearch/run_logs.md (append, ne pas écraser). Inclus :
+   - L'idée en une phrase
+   - Pourquoi tu penses que ça va marcher
+   - Les risques (crash, OOM, régression)
+5. Modifie train.py avec ton changement
+6. Vérifie que le code est syntaxiquement correct (python3 -c "import ast; ast.parse(open('/home/gmartin/worspace/autoresearch/train.py').read())")
+7. Écris un rapport AVANT run dans /home/gmartin/worspace/autoresearch/experiments/experiment_101/report.md :
+   - Ligne 1 : description courte (UNE phrase, sans markdown heading)
+   - Ce que tu as changé et pourquoi
+8. Si tu as des notes ou conseils pour les prochaines itérations, modifie /home/gmartin/worspace/autoresearch/prompt.md
+
+IMPORTANT : ton SEUL travail est de modifier train.py intelligemment. L'entraînement sera lancé automatiquement après.
+Commence maintenant. Ne demande pas confirmation.

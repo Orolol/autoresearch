@@ -1,0 +1,7 @@
+Done. Here's a summary of experiment 161:
+
+**Change**: Layer-conditional activation function — plain ReLU for early layers (0-3, narrow 1.5x MLP), ReluSquared for late layers (4-7, wide 4.5x MLP).
+
+**Why**: Early layers have only 768 hidden units. ReluSquared double-filters (ReLU kills negatives, squaring suppresses small positives), severely limiting effective active capacity. Plain ReLU keeps all positive neurons at full magnitude. Late layers have 2304 hidden units and benefit from ReluSquared's sparsity.
+
+**Risk**: Most likely neutral — c_proj compensates. But if narrow-MLP capacity matters, this could help. Zero crash risk, zero new parameters.

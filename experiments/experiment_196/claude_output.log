@@ -1,0 +1,12 @@
+Everything is in place. Here's a summary of experiment #196:
+
+**DeltaNet-style error-correcting state update** for cross-chunk recurrence in local layers (2-5).
+
+**Changes (3 lines):**
+1. New `beta_rate` parameter per head in local layers (16 params total)
+2. State update: `S = decay*S + beta * k^T @ (v - k@S) * scale` instead of `S = decay*S + k^T @ v * scale`
+3. Init `beta_rate = 4.0` (sigmoid ≈ 0.982, near-neutral)
+
+**Why this is bold:** Every prior chunk attention experiment (exp183, 189-195) modified intra-chunk attention, layer assignment, chunk size, or added mechanisms. None touched the core state update rule. DeltaNet's error-correcting update is architecturally fundamental — the state only stores novel information, using its 128x128 capacity more efficiently instead of wasting it on redundant KV associations.
+
+**Risk profile:** Low crash risk (standard ops, static shapes). Medium regression risk from ~5-10% compute overhead (one extra matmul per chunk). Near-neutral at init (S=0 → error=v → same as current).

@@ -1,0 +1,13 @@
+Experiment 171 is ready. Summary:
+
+**Change:** `FINAL_LR_FRAC = 0.0` → `FINAL_LR_FRAC = 0.1` (1-line change in train.py:557)
+
+**Idea:** LR Floor — prevent the learning rate from decaying to zero during warmdown. Currently the last ~50 steps (LR < 0.06) are essentially wasted compute. Setting a floor of 10% keeps all steps productive. Inspired by modded-nanogpt PR #224 (Feb 2026), which achieved statistically significant improvement (p=0.0001) with this technique.
+
+**Why this over other options:**
+- FP8 is dead (4+ crashes on Blackwell, abandoned)
+- DeltaNet is too complex for a single experiment
+- This is a novel, never-tested hyperparameter that comes from cutting-edge speedrun research
+- Zero crash risk, 1-line change
+
+**Risks:** Mostly neutral — the effect is a ~10% increase in average LR during warmdown. Could be within noise (~0.003 variance).

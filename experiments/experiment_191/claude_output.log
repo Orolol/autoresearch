@@ -1,0 +1,9 @@
+Experiment #191 is ready. Here's the summary:
+
+**GLA-style input-dependent decay** for chunkwise linear attention in local layers (2-5).
+
+**What**: Replace fixed per-head decay `gamma = sigmoid(decay_rate)` with content-dependent `gamma_t = sigmoid(decay_rate + decay_proj(x_t))`. Each position decides its own forget rate based on its content — important tokens are retained, irrelevant ones forgotten faster.
+
+**Why this is bold**: This is the key architectural innovation from GLA (Yang et al. 2024) over RetNet's fixed decay. Exp181 attempted this but NaN'd from `cumsum(log_gamma)` instability. The fix: clamp gamma >= 0.8 before log, keeping all computation in float32. At init, decay_proj=0 so it's identical to the current best.
+
+**Changes**: 3 edits in train.py — added `decay_proj` linear layer (128 total new params across 4 local layers), zero-init in `init_weights`, and rewrote the local attention branch to compute per-position decay masks per chunk using stable log-cumsum.

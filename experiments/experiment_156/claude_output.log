@@ -1,0 +1,13 @@
+All done. Here's a summary of experiment #156:
+
+**Partial Rotary Position Embedding (50%)** — Apply RoPE to only the first 64 of 128 head dimensions, making the remaining 64 position-free for content-only attention matching.
+
+**Changes made to train.py:**
+1. Added `ROPE_FRACTION = 0.5` hyperparameter (line 549)
+2. Modified `apply_rotary_emb` to split input into rotated (`x_rope`) and pass-through (`x_pass`) parts based on cos/sin shape (lines 52-61)
+3. Added `self.rope_dim` computation in `GPT.__init__` and passed it to `_precompute_rotary_embeddings` instead of `head_dim` (line 216)
+4. Updated `init_weights` to use `self.rope_dim` for rotary recomputation (line 253)
+
+**Why this could work:** The model currently has no content-only matching capability — every attention score is position-dependent. Partial RoPE is a proven technique (PaLM, CodeLlama) that lets heads match by both position and content. Zero new params, slightly less compute.
+
+**Risks:** 50% reduction is aggressive; the model may need full positional encoding at 2048 context. Expected range: -0.003 to +0.005.

@@ -1,0 +1,15 @@
+All changes are complete. Here's a summary:
+
+**Experiment #67: Per-head learnable attention temperature (qk_scales)**
+
+**Change:** Added `self.qk_scales = nn.Parameter(torch.ones(n_layer, n_head))` — 32 learnable scalars that multiply Q vectors after QK-norm, giving each head at each layer its own attention sharpness.
+
+**Why:** QK-norm forces all 32 attention heads (8 layers x 4 heads) to use the exact same softmax temperature. This is a real architectural limitation — different heads/layers serve different purposes (syntactic vs semantic) and likely benefit from different temperatures. With softcap=13, max attention logit is ~11.3, leaving room for heads to sharpen attention up to ~15% without saturating.
+
+**Implementation details:**
+- 32 new scalars (negligible compute/memory)
+- Initialized to 1.0 (identical to baseline at step 0)
+- Optimized with AdamW at lr=0.05 (conservative, between resid_lambdas at 0.005 and x0_lambdas at 0.5)
+- Added to proper AdamW optimizer group, NOT in Muon matrix params
+
+**Risks:** Zero crash/OOM. Zero speed impact. Worst case: neutral within noise.

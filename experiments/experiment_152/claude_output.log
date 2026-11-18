@@ -1,0 +1,14 @@
+Done. Here's a summary of experiment #152:
+
+**Idea**: Cross-block linear attention recurrence for local layers (2-5).
+
+**What it does**: Block-diagonal local attention (exp149) has hard boundaries — tokens in one block can't see the previous block. This adds a linear attention state that accumulates K^T @ V across blocks, letting each block query a compressed summary of all previous blocks. Think of it as RetNet/RWKV-style state passing layered on top of the existing block-diagonal SDPA.
+
+**Why it should work**:
+- Addresses the main weakness of block-diagonal attention (cross-block blindness)
+- Adds only **<2% total compute** — local SDPA is just 1.3% of total FLOPs (MLP and lm_head dominate)
+- 16 new parameters total (4 per-head gate scalars × 4 local layers)
+- Safe initialization: gate starts at sigmoid(-2)≈0.12, model begins nearly identical to current best
+- RMS normalization ensures consistent scale regardless of block position
+
+**Risks**: Main risk is neutrality (full-attention layers 0,1,6,7 already provide global context). Crash risk is low (standard ops, static shapes).

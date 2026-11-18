@@ -1,0 +1,7 @@
+Done. Experiment #117: **wte embedding weight decay 0.002**.
+
+**Change**: `weight_decay=0.0` → `weight_decay=0.002` for the wte embedding optimizer group (line 291 of train.py).
+
+**Why this will work**: Exp115 proved that adding WD=0.002 to the Value Embedding produced the current best (-0.00088). The wte embedding is identical in every way — same 16.8M params, same LR 0.6, same WD=0.0, same rare-token drift problem. It's the last large unregularized parameter block.
+
+**Risk**: Low. One counterargument is that wte gets cross-entropy gradient on every token (unlike VE), so it may already be well-calibrated. Worst case: neutral result within noise.

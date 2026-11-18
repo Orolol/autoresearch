@@ -1,0 +1,7 @@
+Done. Here's the summary:
+
+**Experiment 74**: Increase z-loss coefficient from 1e-4 to 2e-4
+
+- **Change**: Single number on line 319 of train.py: `1e-4` -> `2e-4`
+- **Rationale**: Clear directional signal from prior experiments (5e-5 worse than 1e-4, so stronger is better). Exp73 attempted this exact change but crashed on infra. Z-loss synergizes with softcap=13 by penalizing logits approaching the tanh saturation boundary.
+- **Risk**: Zero crash/OOM risk. Worst case: mild regression of ~0.001-0.003 if 2e-4 is too strong.

@@ -1,0 +1,9 @@
+Done. Here's the summary:
+
+**Experiment #147**: `gate_dim=12` (3x n_head) — retry of exp143 which crashed on infra.
+
+**Change**: Single constant in `train.py:77`: `self.gate_dim = 2 * self.n_head` → `self.gate_dim = 3 * self.n_head`
+
+**Rationale**: gate_dim=4 (exp146) was neutral. gate_dim=12 has never been GPU-tested (2 infra crashes). This bounds the search space — if 12 is also neutral, gate_dim=8 is confirmed optimal and we move to FP8 or DeltaNet/GLA.
+
+**Risk**: High probability of neutral result given gate_dim=4 was already within noise of gate_dim=8. Zero crash risk.

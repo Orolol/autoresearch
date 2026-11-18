@@ -1,0 +1,9 @@
+Done. Here's a summary of experiment 55:
+
+**Change**: Muon momentum warmup 300 → 100 steps (`get_muon_momentum` line 555)
+
+**Why**: With ~830 training steps, the 300-step warmup means 36% of training at suboptimal Nesterov momentum (0.85→0.95). Reducing to 100 steps means only 12%. At step 100, momentum is 0.95 (full) instead of 0.883, giving 2.5x stronger look-ahead. NS orthogonalization + NorMuon normalize step size independently, making this safe.
+
+**History**: This exact change was attempted 4 times (exp38/40/49/51) and crashed on infra every time — never tested on GPU. The code was verified correct each time.
+
+**Risk**: Zero. Single number change. No crash/OOM/speed risk.

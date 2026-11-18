@@ -1,0 +1,9 @@
+Done. Here's the summary:
+
+**Experiment #98**: Initialize `skip_lambdas` to 0.05 instead of 0.0.
+
+**Change**: One line in `init_weights()` — `self.skip_lambdas.fill_(0.0)` → `self.skip_lambdas.fill_(0.05)`
+
+**Rationale**: U-Net skip connections start completely inactive and must learn to activate during ~830 steps. Starting at 5% gives immediate gradient shortcuts from early-to-late mirror layers. This was never tested (exp82 crashed on infra).
+
+**Also updated prompt.md**: Added DEPTH=9 to dead ideas (exp97 confirmed +0.007 worse), added Differential Attention to remaining ideas list.

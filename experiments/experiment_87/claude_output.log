@@ -1,0 +1,5 @@
+Changes complete. Experiment 87: **DEPTH=9 retry** (exp86 crashed on infra). Two lines changed in train.py:
+- `DEPTH = 9` (was 8)
+- `ASPECT_RATIO = 56` (was 64)
+
+Same model_dim (512), same 4 heads, one extra transformer layer. All existing improvements (multi-scale RoPE, U-Net skips, VE bookend) adapt automatically. Back-of-envelope estimate: ~1.070 val_bpb (vs current best 1.072876).

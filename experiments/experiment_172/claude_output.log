@@ -1,0 +1,8 @@
+Done. Here's the summary:
+
+**Experiment #172**: FINAL_LR_FRAC = 0.1 → 0.15
+
+- **Why**: Exp171 proved LR floor helps (new best 1.062310). The priority queue says to try 0.15 next. This matches the exact value used by modded-nanogpt PR#224.
+- **Change**: Single constant in train.py line 557
+- **Risks**: Zero crash risk. High chance of being within noise. Very low regression risk.
+- **Expected range**: -0.001 to +0.001

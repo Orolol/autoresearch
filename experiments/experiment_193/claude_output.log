@@ -1,0 +1,10 @@
+Done. **Experiment 193: RetNet-style hybrid attention** — softmax intra-chunk + linear recurrence cross-chunk for local layers.
+
+**Changes**: 4 lines in the chunkwise linear attention block:
+- Replaced `scores * intra_decay` (linear attention) with `softmax(scores + log_decay_bias, masked_fill(-inf))` 
+- The decay is now an additive log-space positional bias (learned ALiBi-style) instead of a multiplicative mask
+- Cross-chunk recurrence and state updates are completely unchanged
+
+**Why this could work**: Softmax gives much sharper attention within 256-token chunks (can attend to 1 token precisely), while the cross-chunk recurrence already handles long-range context. This is exactly the RetNet hybrid paradigm that outperformed pure linear attention in the original paper. All 6 attempts to improve the all-linear mechanism failed — time to change the paradigm.
+
+**Risks**: Medium regression risk from magnitude mismatch between softmax and linear outputs; very low crash risk (standard ops, static shapes).

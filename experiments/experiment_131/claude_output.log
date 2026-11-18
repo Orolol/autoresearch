@@ -1,0 +1,9 @@
+All done. Here's a summary of experiment #131:
+
+**Change**: Added RWKV-style input-dependent per-head attention output gating. Before `c_proj`, each head's output is scaled by `2 * sigmoid(W_gate @ x)` where `W_gate` is a tiny Linear(512→4). Initialized to neutral (2*sigmoid(0)=1.0).
+
+**Why**: The identical gating mechanism (2*sigmoid, zero-init, per-head) was the biggest recent win when applied to VE (exp84, -0.004). Per-head *static* scales (exp111) were dead, but input-dependent gating is fundamentally different — the model can dynamically suppress/amplify each head per token. This is a core pattern in RWKV and Mamba architectures.
+
+**Cost**: 16K new params (0.02%), negligible compute. Zero crash risk.
+
+**Expected range**: -0.003 to +0.005.

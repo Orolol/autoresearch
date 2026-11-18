@@ -1,0 +1,47 @@
+Sending to RunPod Flash (RTX_5090)...
+2026-03-17 14:59:21,037 | INFO  | LiveServerless:lfyndmjvwjgw10 | API /run
+2026-03-17 14:59:21,370 | INFO  | LiveServerless:lfyndmjvwjgw10 | Started Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1
+2026-03-17 14:59:21,402 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | Status: IN_QUEUE
+2026-03-17 14:59:21,728 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | .
+2026-03-17 14:59:23,056 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | ..
+2026-03-17 14:59:28,057 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | ...
+2026-03-17 14:59:44,986 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | ....
+2026-03-17 15:00:03,645 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | .....
+2026-03-17 15:00:22,437 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | ......
+2026-03-17 15:00:41,055 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | .......
+2026-03-17 15:00:59,184 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | ........
+2026-03-17 15:01:20,145 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | Status: IN_PROGRESS
+2026-03-17 15:01:20,498 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | .
+2026-03-17 15:01:21,904 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | ..
+2026-03-17 15:01:26,941 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | ...
+2026-03-17 15:01:43,130 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | ....
+2026-03-17 15:01:52,901 | INFO  | Job:a5a49ee4-0c79-49d0-b2d1-9c8f0bf23f53-e1 | Status: COMPLETED
+2026-03-17 15:01:52,938 | INFO  | Worker:ncrzld1n66cyal | Delay Time: 112194 ms
+2026-03-17 15:01:52,938 | INFO  | Worker:ncrzld1n66cyal | Execution Time: 36988 ms
+Traceback (most recent call last):
+  File "/tmp/autoresearch_etkyjkht/train.py", line 672, in <module>
+    loss.backward()
+  File "/usr/local/lib/python3.12/dist-packages/torch/_tensor.py", line 625, in backward
+    torch.autograd.backward(
+  File "/usr/local/lib/python3.12/dist-packages/torch/autograd/__init__.py", line 354, in backward
+    _engine_run_backward(
+  File "/usr/local/lib/python3.12/dist-packages/torch/autograd/graph.py", line 841, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File "/tmp/autoresearch_etkyjkht/train.py", line 367, in forward
+    x = self.transformer.wte(idx). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.
+2026-03-17 14:01:13,488 | INFO  | Installing Python dependencies: ['torch', 'kernels', 'numpy', 'pyarrow', 'requests', 'rustbpe', 'tiktoken']
+GPU: NVIDIA GeForce RTX 5090 -> peak BF16: 838.0 TFLOPS
+Vocab size: 8,192
+Model config: {'sequence_len': 2048, 'vocab_size': 8192, 'n_layer': 8, 'n_head': 4, 'n_kv_head': 4, 'n_embd': 512, 'window_pattern': 'SSSL', 'rope_bases': (2500, 10000, 40000, 160000)}
+Parameter counts:
+  wte                     : 4,194,304
+  value_embeds            : 8,388,608
+  lm_head                 : 4,194,304
+  transformer_matrices    : 20,984,320
+  scalars                 : 20
+  total                   : 37,761,556
+Estimated FLOPs per token: 2.139863e+08
+Scaling AdamW LRs by 1/sqrt(512/768) = 1.224745
+Time budget: 300s
+Gradient accumulation steps: 4

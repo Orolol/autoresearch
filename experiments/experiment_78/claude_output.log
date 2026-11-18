@@ -1,0 +1,5 @@
+Done. Experiment #78 is ready:
+
+- **Change**: Added `x = norm(x)` after `F.relu(x).square()` in `MLP.forward()` (line 120 of train.py)
+- **Rationale**: NormFormer-style mid-MLP normalization, continuing the gradient flow improvement theme that has driven every winning experiment (softcap 13, z-loss, U-Net skips). Retry of exp77 which crashed on infra.
+- **Risk**: Minimal — zero params, negligible compute, same `norm()` function used everywhere else in the model.

@@ -1,0 +1,5 @@
+Done. Experiment 143 is ready:
+
+- **Change**: `gate_dim = 2 * n_head` → `gate_dim = 3 * n_head` (8→12) in `CausalSelfAttention`
+- **Why**: Direct follow-up from exp141 (biggest win, -0.002). MLP gating (exp142) failed, pointing back to attention gate_dim tuning. 50% more input dims for the gate while keeping a Muon-friendly (4, 12) matrix shape
+- **Risk**: Low — same mechanism, just wider input. Expected range: -0.003 to +0.003

@@ -1,0 +1,8 @@
+Everything looks clean. The `lm_proj` weight (shape 256×512) will get its own Muon group since its shape is unique among matrix params. The `lm_head` (shape 32768×256) stays in AdamW with the unembedding LR.
+
+Summary of changes:
+- **Added** `lm_proj`: a 512→256 bottleneck linear projection before the output layer
+- **Changed** `lm_head`: from 512→32768 to 256→32768
+- **Forward**: `logits = lm_head(lm_proj(x))` instead of `logits = lm_head(x)`
+- **Net effect**: ~8.2M fewer params (11%), ~18% less total compute, same model depth/width/attention quality
+- **6 lines changed**, no new dependencies, no crash risk

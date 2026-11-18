@@ -1,0 +1,6 @@
+Done. Experiment 61 is ready:
+
+- **Change**: `HEAD_DIM = 128` → `HEAD_DIM = 64` (single line, `train.py:451`)
+- **Effect**: 8 attention heads instead of 4, same parameter count and compute
+- **Rationale**: More diverse attention patterns at this small model scale. GPT-2 used 64-dim heads. Never tested in this series.
+- **Risk**: Very low — if 128-dim heads are better with QK-norm, mild regression ~0.001-0.003

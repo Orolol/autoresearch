@@ -1,0 +1,7 @@
+Done. Changes made to `train.py`:
+
+1. **`ASPECT_RATIO = 56`** (was 64) — keeps model_dim=512 with 9 layers
+2. **`DEPTH = 9`** (was 8) — adds one transformer layer
+3. **Bug fix line 325**: `if i >= half:` → `if i >= half and mirror < half:` — prevents IndexError when n_layer is odd (middle layer i=4 has mirror=4 which would overflow skip_lambdas[4])
+
+This is the 7th attempt at DEPTH=9. The first 3 had an IndexError bug, the next 3 had the fix but crashed on RunPod infra. The code is verified correct — expected result ~1.070-1.071.

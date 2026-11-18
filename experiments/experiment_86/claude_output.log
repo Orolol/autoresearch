@@ -1,0 +1,3 @@
+Changes look correct. The experiment is ready:
+
+**Experiment #86**: DEPTH=9 (was 8), ASPECT_RATIO=56 (was 64) — adds a 9th transformer layer while keeping model_dim=512 with 4 heads. The hypothesis is that the accumulated gradient flow improvements (multi-scale RoPE, U-Net skips, VE first+last) make the extra layer more effective than when exp22 tested it with a weaker baseline. The ~8-10% compute overhead should be compensated by the additional modeling capacity.

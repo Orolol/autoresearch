@@ -1,0 +1,12 @@
+Done. Here's a summary of experiment 180:
+
+**Idea**: Extend chunkwise linear attention (the winning mechanism from exp179) from layers 2-5 to ALL 8 layers, completely eliminating softmax from the model.
+
+**Why it should work**:
+- exp179 was the biggest breakthrough ever (-0.012 BPB) using this exact mechanism on 4 layers
+- The 4 global layers currently waste O(2048²) FLOPs on softmax attention — converting them saves ~7.6x attention FLOPs per layer → more training steps
+- Full-sequence context is preserved via the recurrent KV state with exponential decay
+
+**Code change**: 2 lines — `self.local_attn = True` for all layers + remove the init guard on `decay_rate`.
+
+**Risks**: Global bookend layers (0,7) may need softmax's exact normalization for long-range reasoning. If this regresses, the next experiment should try a hybrid: linear attention on layers 1-6, keeping only layers 0 and 7 as softmax.

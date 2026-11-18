@@ -1,0 +1,9 @@
+Done. Here's a summary of experiment #190:
+
+**Changes to `train.py`:**
+1. **Multi-scale decay init**: Per-head decay rates [2.0, 3.5, 5.0, 7.0] instead of uniform 4.0, giving effective contexts of ~8, ~29, ~143, ~1000 tokens. Heads specialize across temporal scales.
+2. **Remove RoPE from local linear attention layers (2-5)**: The decay mechanism provides its own positional signal; RoPE is redundant and may create conflicting position information. Follows RetNet/RWKV design. Global softmax layers keep RoPE.
+
+**Why this combination**: Multi-scale decay was the #1 priority queue item (never GPU-tested after exp182 INFRA crash). RoPE removal is theoretically motivated — linear attention + decay = self-contained positional encoding, making RoPE interference unnecessary. Together, multi-scale decay replaces multi-scale RoPE's function for local layers.
+
+**Risk profile**: Medium regression risk (RoPE removal), very low crash risk, zero new parameters.

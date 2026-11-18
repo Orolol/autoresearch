@@ -1,0 +1,9 @@
+Done. Here's what experiment #195 does:
+
+**State-augmented hybrid attention** — injects 16 virtual memory tokens (read from recurrent state S via learned patterns `mem_read`) into the intra-chunk softmax attention for local layers (2-5). Instead of `output = softmax(local) + linear(cross)` where local and cross-chunk are separate, the softmax now sees both real tokens AND memory tokens, enabling natural attention routing between local and distant context through softmax competition.
+
+Key details:
+- **New param**: `mem_read` (64×128 = 8K per layer, 32K total, 0.07% of model), Muon-optimized
+- **Attention matrix**: (256, 256) → (256, 272), ~6% increase in 4/8 layers
+- **Keeps** the linear cross term `Q@S*decay` as complementary smooth pathway
+- **Init**: mem_read uniform like attention weights; virtual_v = mem_read @ S = 0 at step 0 (S starts empty), so degrades gracefully

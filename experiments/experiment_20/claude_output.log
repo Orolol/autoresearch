@@ -1,0 +1,6 @@
+Done. Exp20 retries the factored lm_head from exp19 (which crashed due to infra, not code):
+
+- **Change**: 512→256 bottleneck projection (`lm_proj`) before the lm_head (256→32768)
+- **Why**: lm_head is ~36% of total FLOPs. Factoring cuts it by ~50%, total compute by ~18%. More steps = better convergence.
+- **Risk**: If 256 dims is too narrow for discriminating 32768 tokens, quality regresses. No crash/OOM risk — exp19 code was verified correct.
+- **Expected**: improvement of ~0.003-0.008 if bottleneck is sufficient, regression of ~0.002-0.010 if too restrictive.

@@ -1,0 +1,13 @@
+Done. Here's a summary of experiment #128:
+
+**Change**: V-only token shift — removed K shift from the winning exp126 baseline, keeping only V shift.
+
+**What was modified in train.py**:
+- Removed `self.time_mix_k` parameter from `CausalSelfAttention.__init__`
+- K projection now uses unshifted `x` instead of `x_k`
+- V projection unchanged (still uses shifted `x_v`)
+- Removed `time_mix_k.fill_(0.0)` from `init_weights`
+
+**Why**: Exp127 proved that Q shift hurts (+0.008). K participates in attention scoring just like Q (via `Q @ K^T`) and has RoPE applied after projection — shifting K blurs the position signal. V has no RoPE and only provides content to aggregate, so shifting enriches it without position interference. This is a simplification that removes 4096 params.
+
+**Risk**: Medium chance of neutral if K shift was actually the beneficial component. Low crash risk (code removal only).

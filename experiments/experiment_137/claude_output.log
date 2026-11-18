@@ -1,0 +1,5 @@
+Done. Experiment #137: **WARMDOWN_RATIO 0.6 → 0.7** (retry of exp136 which crashed on infra).
+
+**Rationale**: The 0.4→0.6 signal was +0.011 — by far the strongest hyperparameter improvement ever. The monotonic trend (more warmdown = better) is clear, but 0.7 has never actually run on GPU. All architectural changes are exhausted (7 straight neutral/crash results).
+
+**Change**: Single constant, line 523 of train.py. Zero crash risk.

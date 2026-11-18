@@ -1,0 +1,7 @@
+Done. Here's what experiment 139 does:
+
+**Change:** Removed the linear weight decay schedule (`WEIGHT_DECAY * (1 - progress)` → constant `WEIGHT_DECAY`).
+
+**Why:** The WD currently double-decays — once explicitly via the schedule, and again implicitly via the decaying LR in the Muon update. With WARMDOWN_RATIO=0.7, this makes effective regularization drop quadratically, leaving the last ~50% of training nearly unregularized. Keeping WD constant is standard practice (GPT-3, Chinchilla) and has never been tested here.
+
+**Risk:** Zero crash risk. Possible slight regression if over-regularization during warmdown hurts convergence. Expected range: -0.003 to +0.005.

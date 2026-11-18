@@ -1,0 +1,5 @@
+Done. Summary of experiment 41:
+
+**Change**: `beta2=0.95` → `beta2=0.99` in Muon optimizer (line 273 of train.py)
+
+**Why**: NorMuon's second momentum buffer estimates per-row gradient variance for adaptive step sizing. Increasing beta2 from 0.95 (20-step window) to 0.99 (100-step window) gives smoother, more stable per-parameter learning rates. The total gradient norm is preserved by NorMuon's normalization — beta2 only affects how the gradient budget is distributed across rows. Zero risk, single number change, never tested in 40 experiments.

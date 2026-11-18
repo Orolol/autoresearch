@@ -1,0 +1,12 @@
+Done. Here's a summary of experiment #92:
+
+**Change**: DEPTH=9 (from 8) with U-Net skip bug fix for odd depths
+
+**Three modifications to train.py**:
+1. **Bug fix** (line 324): `if i >= half:` → `if i >= half and mirror < half:` — fixes IndexError when n_layer is odd (the real cause of exp86/87 crashes)
+2. `DEPTH = 9` (was 8)
+3. `ASPECT_RATIO = 56` (was 64, keeps model_dim=512)
+
+**Why this should work**: Depth is the most valuable axis. Exp86/87 (DEPTH=9) were never tested on GPU — they crashed from the skip indexing bug, not infra. With all accumulated gradient flow improvements (U-Net skips, multi-scale RoPE, VE bookends, softcap 13), the 9th layer should more than compensate for ~8-10% fewer training steps. Back-of-envelope estimate: ~1.070-1.071.
+
+**Risks**: Mild (~0.001-0.003) regression if step count reduction outweighs capacity gain. Zero crash/OOM risk.

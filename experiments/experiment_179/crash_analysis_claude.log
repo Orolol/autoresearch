@@ -1,0 +1,3 @@
+**CLASSIFICATION: INFRA**
+
+Le worker RunPod n'a produit aucune sortie du script Python. Le job est passé IN_PROGRESS pendant ~6 minutes avec seulement des dots de polling, puis s'est terminé sans traceback ni stdout. Le script a probablement crashé ou timeout pendant la phase `torch.compile` — la nouvelle boucle de linear attention chunkwise (8 itérations avec état récurrent) doit être déroulée par le compilateur, ce qui allonge significativement le temps de compilation. Un retry devrait fonctionner.

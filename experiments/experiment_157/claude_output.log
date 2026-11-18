@@ -1,0 +1,11 @@
+The function uses `head_dim` internally for frequency computation: `channel_range / head_dim`. When we pass `rope_dim=64` instead of `head_dim=128`, the frequency range changes — `inv_freq = 1/base^(k/64)` for k in [0,2,...,62], vs the original `1/base^(k/128)`. This means the rotated dims get a denser frequency spectrum covering the full range, which is actually better — each rotated dimension carries more positional information per dim.
+
+The output cos/sin will have shape `[1, seq_len, n_head, 32]` (rope_dim//2 = 32), and `apply_rotary_emb` will correctly rotate only the first 64 dims and pass through the remaining 64.
+
+Everything checks out. The implementation is clean, minimal, and backward-compatible (ROPE_FRACTION=1.0 recovers original behavior).
+
+**Summary of experiment 157:**
+- **Idea**: Partial RoPE (ROPE_FRACTION=0.5) — retry of exp156 infra crash
+- **Changes**: 4 edits in train.py — `apply_rotary_emb` handles partial rotation via cos shape, `rope_dim` computed from fraction, passed to rotary precomputation
+- **Why**: Adds content-only matching capability (position-free dims). Proven in PaLM/CodeLlama/Gemma. Zero new params.
+- **Risk**: Medium regression risk (50% is aggressive at 2048 context), very low crash risk (standard tensor ops, static shapes)

@@ -1,0 +1,3 @@
+Le fichier existe déjà avec le bon diagnostic. Le contenu est correct — INFRA, même analyse que la mienne.
+
+**CLASSIFICATION: INFRA** — Le code n'a jamais tourné. RunPod a refusé le déploiement car un endpoint avec le même template existe déjà (résidu probable de l'exp174). Il faut nettoyer les endpoints RunPod stale puis retenter.

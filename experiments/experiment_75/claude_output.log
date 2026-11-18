@@ -1,0 +1,8 @@
+Done. Experiment 75 is ready:
+
+- **Change**: z-loss coefficient 1e-4 → 2e-4 (line 319, single number)
+- **Evidence**: Strongest directional signal of any untested change. No z-loss → 1e-4 helped (exp9). 5e-5 was worse (exp63). 2e-4 never reached GPU (exp73/74 both infra crashes).
+- **Risk**: Zero crash/OOM risk. Worst case: ~0.001-0.003 regression.
+- **train.py** modified and syntax-verified
+- **report.md** written
+- **run_logs.md** updated

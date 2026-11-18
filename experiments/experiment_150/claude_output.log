@@ -1,0 +1,9 @@
+Done. Here's the summary of experiment #150:
+
+**Idea**: Extend local attention from layers 2-5 to layers 1-6, keeping only bookend VE layers (0, 7) with full causal attention.
+
+**Change**: One line in `train.py:84` — `self.local_attn = not has_ve(layer_idx, config.n_layer)` instead of the previous range check `layer_idx >= 2 and layer_idx < n - 2`.
+
+**Rationale**: Exp149 proved local attention works (-0.001546). Extending from 4/8 to 6/8 local layers gives ~50% more compute savings → more training steps. VE layers need global context for token identity; non-VE layers can work locally with token shift and U-Net skips providing cross-boundary info.
+
+**Risk**: Medium — layers 1 and 6 lose global attention, but they still receive global information through residual stream from layer 0, U-Net skips, and x0_lambdas.

@@ -1,0 +1,9 @@
+All looks good. The implementation is complete:
+
+**Experiment #174: Partitioned Hyperconnections (2-lane residual stream)**
+
+- **What**: Split the residual stream into 2 lanes. Attention reads from lane0, MLP reads from lane1. Both sublayers write to both lanes with per-layer learnable weights. Merge via `(s0 + s1) / 2` before final norm.
+- **Why**: Last 3 exps were HP tweaks (forced architectural change). modded-nanogpt PR#230 showed -45 steps with this approach. Fundamentally different from parallel attn+MLP (exp60) because sublayers have dedicated read lanes.
+- **Init safety**: All write weights = 1.0 makes both lanes identical at init = exact equivalence to standard residual. Zero regression risk at step 0.
+- **Cost**: 32 new scalar params, ~128MB extra activation memory, zero extra FLOPs.
+- **Risks**: Crash (low), regression (medium — lanes may not differentiate in 830 steps), OOM (none).

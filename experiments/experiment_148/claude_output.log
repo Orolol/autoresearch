@@ -1,0 +1,11 @@
+Good — `skip_gate_params` are included in `matrix_params`, so the assert accounts for them. The skip_gates' 4 weight matrices (each shape (4, 8)) will be grouped with the attention gate matrices (same shape) in the Muon optimizer.
+
+Implementation is complete. Here's a summary:
+
+**Experiment #148: Sparse per-head gating on U-Net skip connections**
+
+**What**: Added 4 tiny Linear(8→4) gates that modulate U-Net skip connections per attention-head, per token. The gate reads from the first 8 dims of the current layer's input (same sparse pattern as the attention gate from exp141) and outputs per-head scaling factors via `2*sigmoid(...)`.
+
+**Why**: The sparse attention gate (exp141) was the biggest recent win (-0.002318). This extends the same proven pattern — sparse input, per-head output, Muon-friendly (4,8) matrix — to U-Net skip connections, another key information pathway currently using only scalar gating.
+
+**Risk**: Low. Zero-init starts identical to current model. Only 128 new params. All ops are static-shape and torch.compile compatible. Main risk is neutrality (skip states may lack head structure).

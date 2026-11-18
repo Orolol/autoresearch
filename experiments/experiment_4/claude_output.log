@@ -1,0 +1,12 @@
+Done. Here's a summary of experiment 4:
+
+**Experiment 4: GQA with n_kv_head=2**
+
+- **Change**: 2 lines modified — added `N_KV_HEAD = 2` hyperparameter and passed it to `build_model_config`
+- **Effect**: 4 query heads now share 2 KV heads (2:1 GQA ratio), saving ~10.5M params (~14%)
+- **Hypothesis**: Fewer params → faster steps → more training in 5 min → better convergence
+- **Risk**: VE dimension halves (512→256), and with only 4 heads, KV sharing might lose too much diversity
+- **Best case**: ~0.002-0.005 improvement from more steps
+- **Worst case**: ~0.005-0.010 regression from reduced KV/VE capacity
+
+The code is syntactically valid and ready for `ralph.sh` to run.

@@ -1,0 +1,8 @@
+Done. Here's the summary:
+
+**Experiment #35: Cosine warmdown schedule**
+
+- **What**: Replace linear LR decay with cosine decay in `get_lr_multiplier`. During the 60% warmdown phase, cosine keeps LR significantly higher for longer (0.854 vs 0.5 at midpoint), then drops faster at the end.
+- **Why**: Standard in modern LLM training (LLaMA, PaLM, Chinchilla). More effective learning during early warmdown, smoother convergence at the end. Never tested in 34 previous experiments.
+- **Change**: 2 lines — `import math` + cosine formula in warmdown branch.
+- **Risk**: Zero crash/OOM/speed risk. Expected outcome: ~0.001 improvement or neutral within noise.

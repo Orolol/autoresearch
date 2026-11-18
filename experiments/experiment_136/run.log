@@ -1,0 +1,23 @@
+Sending to RunPod Flash (RTX_5090)...
+2026-03-16 20:50:42,662 | INFO  | LiveServerless:lfyndmjvwjgw10 | API /run
+2026-03-16 20:50:42,901 | INFO  | LiveServerless:lfyndmjvwjgw10 | Started Job:5bd50b42-24f8-4430-8e8f-ee4c5cf7695f-e2
+2026-03-16 20:50:42,929 | INFO  | Job:5bd50b42-24f8-4430-8e8f-ee4c5cf7695f-e2 | Status: IN_PROGRESS
+2026-03-16 20:50:43,278 | INFO  | Job:5bd50b42-24f8-4430-8e8f-ee4c5cf7695f-e2 | .
+2026-03-16 20:50:44,498 | INFO  | Job:5bd50b42-24f8-4430-8e8f-ee4c5cf7695f-e2 | ..
+2026-03-16 20:50:46,418 | INFO  | Job:5bd50b42-24f8-4430-8e8f-ee4c5cf7695f-e2 | Status: COMPLETED
+2026-03-16 20:50:46,462 | INFO  | Worker:ncrzld1n66cyal | Delay Time: 104 ms
+2026-03-16 20:50:46,462 | INFO  | Worker:ncrzld1n66cyal | Execution Time: 1704 ms
+Traceback (most recent call last):
+  File "/tmp/autoresearch_pk39_van/train.py", line 19, in <module>
+    _cap = torch.cuda.get_device_capability()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py", line 598, in get_device_capability
+    prop = get_device_properties(device)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py", line 614, in get_device_properties
+    _lazy_init()  # will define _get_device_properties
+    ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py", line 410, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: CUDA driver initialization failed, you might not have a CUDA gpu.
+2026-03-16 19:50:42,952 | INFO  | Installing Python dependencies: ['torch', 'kernels', 'numpy', 'pyarrow', 'requests', 'rustbpe', 'tiktoken']

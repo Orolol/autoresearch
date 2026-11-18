@@ -1,0 +1,5 @@
+Done. **Experiment 50**: Muon beta2=0.99 (from 0.95).
+
+**Change**: Single number in `setup_optimizer` — `beta2=0.95` -> `beta2=0.99`.
+
+**Rationale**: Smoother NorMuon per-row adaptive step sizing with ~100-step averaging window instead of ~20-step. Analogous to Adam's beta2=0.999 being standard. NorMuon's norm preservation makes total step size invariant to beta2, so this is inherently safe. Never tested on GPU (exp41/42 both crashed on infra).

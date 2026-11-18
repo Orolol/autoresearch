@@ -1,0 +1,7 @@
+Done. Here's a summary of experiment #124:
+
+**Change:** MLP expansion ramp from `[2,2,2,2,4,4,4,4]` to `[2,2,2,3,3,3,4,5]` — same total compute (sum=24), but concentrating maximum capacity in the final layer (5x = 2560 hidden dim).
+
+**Hypothesis:** The last MLP is the final nonlinear transformation before lm_head. Giving it 25% more capacity (5x vs 4x) while smoothly ramping through middle layers should improve prediction quality. Min 2x avoids the exp123 crash (1x was likely too narrow).
+
+**Risk:** Zero crash/OOM. Expected range: -0.003 to +0.003.

@@ -1,0 +1,9 @@
+Done. Here's a summary of experiment 130:
+
+**Idea**: Push non-uniform MLP asymmetry from 1.5x/4.5x to **1.25x/4.75x** (iso-compute).
+
+**Change**: Single line in `train.py:141` — `expansion = 1.25 if layer_idx < half else 4.75`
+
+**Why**: Clear winning trend (uniform → 2x/4x → 1.5x/4.5x, each step improved). Late layers benefit from wider MLPs as they process the richest representations (residual + U-Net skip). Early layers can be narrower since their outputs feed into late layers through skip connections.
+
+**Risks**: Low. Dims (640, 2432) are safe multiples of 128. Possible that 1.5x/4.5x was already the sweet spot (diminishing returns).

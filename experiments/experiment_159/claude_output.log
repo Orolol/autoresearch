@@ -1,0 +1,3 @@
+Shapes are correct. The implementation is clean: local heads (0-2) → block-diagonal SDPA, global head (3) → full causal SDPA, concatenate, then the existing gate/c_proj work unchanged.
+
+The code change is complete. No other files need modification — this is a self-contained change within the local attention branch of `CausalSelfAttention.forward`.

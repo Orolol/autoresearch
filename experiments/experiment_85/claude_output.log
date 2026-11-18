@@ -1,0 +1,8 @@
+The diff shows my 2 changes (has_ve → True, weight tying for all layers) on top of all previous accumulated improvements. Everything is clean.
+
+**Experiment #85 summary:**
+- **Change:** Extend VE from layers {0, 7} to all 8 layers with shared weights + per-layer gates
+- **Why:** VE bookend (exp84) was the biggest single win (-0.004). More coverage = potentially more improvement. Zero extra params (shared embedding), negligible compute cost (~6 extra embedding lookups)
+- **Risk:** Low — same ops already used in 2 layers, just applied to 6 more
+
+The code is syntactically verified and ready for `ralph.sh` to launch training.

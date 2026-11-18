@@ -1,0 +1,7 @@
+Done. Summary of experiment 122:
+
+**Change**: Non-uniform MLP widths — layers 0-3 get 2x expansion (hidden=1024), layers 4-7 get 4x expansion (hidden=2048). Iso-compute with current uniform 3x (total MLP params identical: 12.58M).
+
+**Why**: Later layers handle finer prediction and receive U-Net skip information from early layers. Wider late-layer MLPs give more capacity to exploit this combined signal. All VE/hyperparameter paths are exhausted.
+
+**Risk**: Early 2x layers may bottleneck feature extraction. Zero crash/OOM risk. Expected range: -0.005 to +0.005.

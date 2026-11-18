@@ -1,0 +1,7 @@
+Done. Experiment #133: **remove post-embedding RMSNorm**.
+
+- **Change**: removed `x = norm(x)` after `wte(idx)` in `GPT.forward()` (one line deletion)
+- **Why**: frees embedding magnitude information, enriches x0 residual signal, simplifies code
+- **Risk**: likely neutral (norm may be near no-op), zero crash risk
+- **If it works**: code simplification win + freed expressivity
+- **If it fails**: try EMBEDDING_LR tuning or FP8 retry next

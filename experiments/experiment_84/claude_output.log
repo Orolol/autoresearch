@@ -1,0 +1,12 @@
+Done. Here's the summary:
+
+**Experiment #84**: VE bookend — Value Embedding on first AND last layer with shared weights (retry of exp83 which crashed on infra).
+
+**Changes** (~5 lines in train.py):
+- `has_ve()` now returns True for layer 0 and last layer (was last-only)
+- Weight tying: `self.value_embeds['0'].weight = self.value_embeds[str(n_layer-1)].weight`
+- Each layer keeps its own input-dependent gate (separate ve_gate per layer)
+
+**Why**: VE is the single most critical component (+0.023 catastrophe when removed). Adding it to the first layer gives token-specific value residuals at both ends of the network, improving gradient flow. Zero extra params (shared weight), negligible compute (one extra embedding lookup). Follows the winning gradient-flow-improvement pattern.
+
+**Risks**: Zero crash/OOM risk. Worst case ~0.003 regression.

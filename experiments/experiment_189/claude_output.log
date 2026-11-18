@@ -1,0 +1,8 @@
+Everything looks good. The implementation is clean:
+
+- **32 new scalar parameters** (negligible overhead)
+- **Exact baseline equivalence** at init (all write weights = 1.0 → both lanes identical → merge gives same result)
+- **~320MB extra memory** for 2x residual + 2x skip states (well within 32GB budget)
+- **Zero extra compute** — same attn/MLP calls, just different routing
+
+The key architectural insight: attention now reads from a lane that accumulates mostly attention outputs from prior layers, while MLP reads from a lane that accumulates mostly MLP outputs. This creates a natural separation of the "what to attend to" and "what to transform" information streams, which the model can learn to exploit through the write weights.

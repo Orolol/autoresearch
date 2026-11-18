@@ -1,0 +1,8 @@
+Done. Here's the summary:
+
+**Experiment #64: WARMUP_RATIO = 0.0 → 0.01**
+
+- **Change**: Single constant — adds a tiny linear LR warmup covering 1% of the 300s budget (~3s, ~8-9 steps)
+- **Why**: Currently no warmup at all. The model jumps from random init to full LR immediately after compilation. A brief warmup lets AdamW momentum buffers initialize on smaller updates, preventing early overshooting. Standard practice in all major LLM pipelines.
+- **Risk**: Zero. If warmup is unnecessary, it's a no-op (8-9 steps at slightly lower LR is negligible). No crash/OOM/speed risk.
+- **Files modified**: `train.py` (line 462), `run_logs.md` (appended), `experiments/experiment_64/report.md` (created), `prompt.md` (notes appended)

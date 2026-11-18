@@ -1,0 +1,10 @@
+The call passes `EMBEDDING_LR=0.6` and `UNEMBEDDING_LR=0.004`. So `tied_lr = sqrt(0.6 * 0.004) = sqrt(0.0024) ≈ 0.049`. After dmodel_lr_scale (1.225 for dim=512): `0.049 * 1.225 ≈ 0.060`. This is a reasonable compromise LR.
+
+Summary of changes for **Experiment 11 — Embedding Tying**:
+
+1. **`self.lm_head.weight = self.transformer.wte.weight`** — share the 32768×512 weight matrix
+2. **Single init with std=0.5** — compromise between original wte (1.0) and lm_head (0.001)
+3. **Removed lm_head from optimizer** — shared weight uses `tied_lr = sqrt(0.6 × 0.004) ≈ 0.049`
+4. **Value embeds unaffected** — keep original LR=0.6
+
+Saves **16.8M params (22%)** with zero compute overhead. Softcap=15 + z-loss protect against initial logit scale. The main risk is the compromise LR being suboptimal for one side.

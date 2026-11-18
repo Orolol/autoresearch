@@ -1,0 +1,11 @@
+All done. Here's a summary of experiment #80:
+
+**Multi-scale RoPE**: Each of the 4 attention heads gets a different RoPE base frequency — (2500, 10000, 40000, 160000) in geometric progression. This lets heads specialize across distance ranges: head 0 for local syntax patterns, head 3 for long-range semantic relationships.
+
+**Changes made to train.py**:
+- Added `rope_bases` field to `GPTConfig`
+- Added `ROPE_BASES = (2500, 10000, 40000, 160000)` hyperparameter
+- Modified `_precompute_rotary_embeddings` to compute per-head cos/sin with different bases (shape changes from `[1, T, 1, d/2]` to `[1, T, n_head, d/2]`)
+- Zero extra parameters, zero extra compute — only the precomputed rotary constants differ
+
+**Risk**: Moderate. Exp65 (base=1000 for ALL heads) was catastrophic, but here only 1/4 heads deviates below default, at a more conservative 2500. Worst case ~0.002 regression.

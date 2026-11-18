@@ -1,0 +1,34 @@
+Sending to RunPod Flash (RTX_5090)...
+2026-03-12 09:42:06,184 | INFO  | LiveServerless:6vpwrdi9ebthaa | API /run
+2026-03-12 09:42:06,449 | INFO  | LiveServerless:6vpwrdi9ebthaa | Started Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1
+2026-03-12 09:42:06,489 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | Status: IN_QUEUE
+2026-03-12 09:42:06,837 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | .
+2026-03-12 09:42:08,117 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | ..
+2026-03-12 09:42:12,572 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | ...
+2026-03-12 09:42:28,457 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | ....
+2026-03-12 09:42:47,185 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | .....
+2026-03-12 09:43:04,993 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | ......
+2026-03-12 09:43:22,261 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | .......
+2026-03-12 09:43:43,905 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | ........
+2026-03-12 09:44:04,662 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | .........
+2026-03-12 09:44:13,903 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | Status: IN_PROGRESS
+2026-03-12 09:44:14,309 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | .
+2026-03-12 09:44:15,497 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | ..
+2026-03-12 09:44:19,725 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | ...
+2026-03-12 09:44:39,264 | INFO  | Job:67538ddf-2407-4e04-ba4b-44eaadd063f2-e1 | Status: COMPLETED
+2026-03-12 09:44:39,291 | INFO  | Worker:d5boctgpoye0sy | Delay Time: 122731 ms
+2026-03-12 09:44:39,291 | INFO  | Worker:d5boctgpoye0sy | Execution Time: 20860 ms
+Traceback (most recent call last):
+  File "/tmp/autoresearch_0nwwc971/train.py", line 19, in <module>
+    _cap = torch.cuda.get_device_capability()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py", line 598, in get_device_capability
+    prop = get_device_properties(device)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py", line 614, in get_device_properties
+    _lazy_init()  # will define _get_device_properties
+    ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py", line 410, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: CUDA driver initialization failed, you might not have a CUDA gpu.
+2026-03-12 08:44:09,129 | INFO  | Installing Python dependencies: ['torch', 'kernels', 'numpy', 'pyarrow', 'requests', 'rustbpe', 'tiktoken']

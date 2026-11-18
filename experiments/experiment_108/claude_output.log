@@ -1,0 +1,7 @@
+Done. Experiment 108 is ready:
+
+**Change**: VE embedding LR separated from token embedding LR. `VE_LR = 0.2` (was 0.6, same as wte). 3-line change.
+
+**Why**: VE bookend was the biggest win (-0.004). VE serves as a stable reference for value computation — it shouldn't move as fast as token embeddings. Lower LR = smoother target for the VE gates to learn against.
+
+**Risk**: Low. If 0.2 is wrong direction, expected regression ~0.003 (within noise). No crash risk.

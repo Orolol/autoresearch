@@ -1,0 +1,3 @@
+The file already exists with the correct analysis. It's already classified as INFRA with the right explanation. No changes needed — the analysis is accurate and complete.
+
+**Résumé** : INFRA — le worker RunPod n'avait pas fini d'initialiser le driver CUDA quand le script a démarré. Le crash arrive à la ligne 19 (`torch.cuda.get_device_capability()`) avant toute exécution du code modèle. Il suffit de retenter.

@@ -1,0 +1,6 @@
+Done. **Exp15: MLP 2.5x** (hidden 1280, down from 1536).
+
+- Continues the winning strategy from exp14 (4x→3x gave -0.008, the biggest improvement ever)
+- Saves ~2.1M more params, faster fwd/bwd → more optimizer steps in 5 min
+- 1280 hidden units with ReluSquared should still have sufficient nonlinear capacity
+- Zero crash/OOM risk, single variable change

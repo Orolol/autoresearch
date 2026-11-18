@@ -1,0 +1,18 @@
+Experiment 60 is ready. Here's a summary:
+
+**Change:** Parallel attention + MLP (PaLM/GPT-J style) in `Block.forward`. Instead of sequential processing where MLP sees post-attention output, both sublayers now operate on the same normalized input independently.
+
+**Code change** (`train.py:130-133`):
+```python
+# Before (sequential):
+x = x + self.attn(norm(x), ...)
+x = x + self.mlp(norm(x))
+
+# After (parallel):
+nx = norm(x)
+x = x + self.attn(nx, ...) + self.mlp(nx)
+```
+
+**Why:** Genuine architectural change (priority #1) validated in PaLM/GPT-J. Saves one norm per block. All Muon optimizer tweaks and compute-reduction ideas are exhausted. This tests whether the sequential MLP-sees-attention-output information flow matters at this scale.
+
+**Risks:** Low. Same params, same shapes. If parallel is worse: mild regression ~0.001-0.005.

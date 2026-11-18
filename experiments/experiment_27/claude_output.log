@@ -1,0 +1,8 @@
+Done. **Experiment 27: Retry EMA** (exp26 crashed from infra, never tested).
+
+Changes to `train.py` (6 lines added):
+1. **After torch.compile**: clone all trainable params as EMA buffers (~152MB)
+2. **After each optimizer step**: `ema.lerp_(p.data, 1 - 0.995)` — running average with ~200 step window
+3. **Before eval**: `p.data.copy_(ema)` — swap to smoothed weights
+
+Zero architectural risk. The model trains identically — only the eval weights are smoothed. Targets the observed ~0.003 noise between identical runs by averaging over the convergence trajectory instead of using one noisy endpoint.

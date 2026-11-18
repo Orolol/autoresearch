@@ -1,0 +1,59 @@
+Sending to RunPod Flash (RTX_5090)...
+2026-03-16 17:41:15,322 | INFO  | LiveServerless:lfyndmjvwjgw10 | API /run
+2026-03-16 17:41:15,671 | INFO  | LiveServerless:lfyndmjvwjgw10 | Started Job:eb72f503-d0fd-4c76-b82c-a92702b64060-e1
+2026-03-16 17:41:15,704 | INFO  | Job:eb72f503-d0fd-4c76-b82c-a92702b64060-e1 | Status: IN_QUEUE
+2026-03-16 17:41:16,037 | INFO  | Job:eb72f503-d0fd-4c76-b82c-a92702b64060-e1 | .
+2026-03-16 17:41:17,458 | INFO  | Job:eb72f503-d0fd-4c76-b82c-a92702b64060-e1 | ..
+2026-03-16 17:41:21,810 | INFO  | Job:eb72f503-d0fd-4c76-b82c-a92702b64060-e1 | Status: IN_PROGRESS
+2026-03-16 17:41:22,205 | INFO  | Job:eb72f503-d0fd-4c76-b82c-a92702b64060-e1 | .
+2026-03-16 17:41:23,546 | INFO  | Job:eb72f503-d0fd-4c76-b82c-a92702b64060-e1 | ..
+2026-03-16 17:41:29,085 | INFO  | Job:eb72f503-d0fd-4c76-b82c-a92702b64060-e1 | ...
+2026-03-16 17:41:43,164 | INFO  | Job:eb72f503-d0fd-4c76-b82c-a92702b64060-e1 | ....
+2026-03-16 17:42:02,340 | INFO  | Job:eb72f503-d0fd-4c76-b82c-a92702b64060-e1 | Status: COMPLETED
+2026-03-16 17:42:02,367 | INFO  | Worker:ncrzld1n66cyal | Delay Time: 3544 ms
+2026-03-16 17:42:02,367 | INFO  | Worker:ncrzld1n66cyal | Execution Time: 40914 ms
+W0316 16:41:58.304000 185 torch/_dynamo/convert_frame.py:1358] [2/8] torch._dynamo hit config.recompile_limit (8)
+W0316 16:41:58.304000 185 torch/_dynamo/convert_frame.py:1358] [2/8]    function: 'muon_step_fused' (/tmp/autoresearch_6bqq7ezc/train.py:376)
+W0316 16:41:58.304000 185 torch/_dynamo/convert_frame.py:1358] [2/8]    last reason: 2/7: tensor 'stacked_grads' size mismatch at index 0. expected 3, actual 1
+W0316 16:41:58.304000 185 torch/_dynamo/convert_frame.py:1358] [2/8] To log all recompilation reasons, use TORCH_LOGS="recompiles".
+W0316 16:41:58.304000 185 torch/_dynamo/convert_frame.py:1358] [2/8] To diagnose recompilation issues, see https://pytorch.org/docs/main/torch.compiler_troubleshooting.html
+Traceback (most recent call last):
+  File "/tmp/autoresearch_6bqq7ezc/train.py", line 636, in <module>
+    optimizer.step()
+  File "/usr/local/lib/python3.12/dist-packages/torch/optim/optimizer.py", line 517, in wrapper
+    out = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/autoresearch_6bqq7ezc/train.py", line 486, in step
+    self._step_muon(group)
+  File "/tmp/autoresearch_6bqq7ezc/train.py", line 474, in _step_muon
+    muon_step_fused(stacked_grads, stacked_params,
+  File "/usr/local/lib/python3.12/dist-packages/torch/_dynamo/eval_frame.py", line 832, in compile_wrapper
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/_dynamo/convert_frame.py", line 1875, in __call__
+    result = self._torchdynamo_orig_backend(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/_dynamo/convert_frame.py", line 688, in __call__
+    result = _compile(
+             ^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/_dynamo/convert_frame.py", line 1375, in _compile
+    raise FailOnRecompileLimitHit(
+torch._dynamo.exc.FailOnRecompileLimitHit: recompile_limit reached with fullgraph=True. Excessive recompilations can degrade performance due to the compilation overhead of each recompilation. To monitor recompilations, enable TORCH_LOGS=recompiles. If recompilations are expected, consider increasing torch._dynamo.config.cache_size_limit to an appropriate value.
+2026-03-16 16:41:19,161 | INFO  | Installing Python dependencies: ['torch', 'kernels', 'numpy', 'pyarrow', 'requests', 'rustbpe', 'tiktoken']
+GPU: NVIDIA GeForce RTX 5090 -> peak BF16: 838.0 TFLOPS
+Vocab size: 8,192
+Model config: {'sequence_len': 2048, 'vocab_size': 8192, 'n_layer': 8, 'n_head': 4, 'n_kv_head': 4, 'n_embd': 512, 'window_pattern': 'SSSL', 'rope_bases': (2500, 10000, 40000, 160000)}
+Parameter counts:
+  wte                     : 4,194,304
+  value_embeds            : 8,388,608
+  lm_head                 : 4,194,304
+  transformer_matrices    : 20,975,616
+  scalars                 : 20
+  total                   : 37,752,852
+Estimated FLOPs per token: 2.139341e+08
+Scaling AdamW LRs by 1/sqrt(512/768) = 1.224745
+Time budget: 300s
+Gradient accumulation steps: 4

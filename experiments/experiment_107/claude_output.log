@@ -1,0 +1,8 @@
+Everything looks correct. The changes are:
+
+1. **Block.__init__** (line 131): Added depthwise Conv1d (kernel_size=4, groups=n_embd)
+2. **Block.forward** (lines 136-138): Causal conv (left-pad by 3, conv, transpose) before MLP
+3. **GPT.init_weights** (lines 193-196): Identity init (only current-position tap = 1.0)
+4. **GPT.setup_optimizer** (lines 287-311): Conv params separated from Muon, placed in AdamW at LR=0.05
+
+The model starts identically to baseline at step 0 (identity conv = pass-through). During training, the conv learns to mix in features from the 3 preceding positions, giving the MLP a local context window complementary to attention's global view. Total overhead: 16K params (0.03%), <1% wall time.

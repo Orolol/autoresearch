@@ -1,0 +1,27 @@
+Sending to RunPod Flash (RTX_5090)...
+2026-03-11 16:14:59,429 | INFO  | LiveServerless:6vpwrdi9ebthaa | API /run
+2026-03-11 16:14:59,809 | INFO  | LiveServerless:6vpwrdi9ebthaa | Started Job:fd2c3805-1e7c-46e3-ae33-3afda400539b-e2
+2026-03-11 16:14:59,839 | INFO  | Job:fd2c3805-1e7c-46e3-ae33-3afda400539b-e2 | Status: IN_QUEUE
+2026-03-11 16:15:00,228 | INFO  | Job:fd2c3805-1e7c-46e3-ae33-3afda400539b-e2 | .
+2026-03-11 16:15:01,458 | INFO  | Job:fd2c3805-1e7c-46e3-ae33-3afda400539b-e2 | ..
+2026-03-11 16:15:06,670 | INFO  | Job:fd2c3805-1e7c-46e3-ae33-3afda400539b-e2 | Status: IN_PROGRESS
+2026-03-11 16:15:07,075 | INFO  | Job:fd2c3805-1e7c-46e3-ae33-3afda400539b-e2 | .
+2026-03-11 16:15:08,361 | INFO  | Job:fd2c3805-1e7c-46e3-ae33-3afda400539b-e2 | ..
+2026-03-11 16:15:12,676 | INFO  | Job:fd2c3805-1e7c-46e3-ae33-3afda400539b-e2 | ...
+2026-03-11 16:15:27,098 | INFO  | Job:fd2c3805-1e7c-46e3-ae33-3afda400539b-e2 | Status: COMPLETED
+2026-03-11 16:15:27,130 | INFO  | Worker:d5boctgpoye0sy | Delay Time: 4628 ms
+2026-03-11 16:15:27,130 | INFO  | Worker:d5boctgpoye0sy | Execution Time: 22127 ms
+Traceback (most recent call last):
+  File "/tmp/autoresearch_8q_on6qu/train.py", line 19, in <module>
+    _cap = torch.cuda.get_device_capability()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py", line 598, in get_device_capability
+    prop = get_device_properties(device)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py", line 614, in get_device_properties
+    _lazy_init()  # will define _get_device_properties
+    ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py", line 410, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: CUDA driver initialization failed, you might not have a CUDA gpu.
+2026-03-11 15:15:04,371 | INFO  | Installing Python dependencies: ['torch', 'kernels', 'numpy', 'pyarrow', 'requests', 'rustbpe', 'tiktoken']

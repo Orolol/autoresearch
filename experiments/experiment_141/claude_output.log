@@ -1,0 +1,14 @@
+Everything looks good. Here's a summary of experiment #141:
+
+**Experiment #141 — Sparse Attention Gate**
+
+**Change**: Added a per-head attention output gate to every layer that uses only the first 8 dimensions of the input (gate_dim = 2 * n_head = 8) to compute a per-head scaling factor via `2 * sigmoid(attn_gate(x[:,:,:8]))`. Applied between SDPA output and c_proj.
+
+**Why this is different from exp131 (which was neutral)**: The key insight from modded-nanogpt's world record PR#117 is that the gate must be **sparse** — using only a tiny subset of input dims. Exp131 used all 512 dims, producing a (512, 4) matrix that Muon can't effectively orthogonalize. The sparse (4, 8) matrix has a 2:1 aspect ratio, matching the optimal ratio from the WR.
+
+**Properties**:
+- 256 extra params total (negligible)
+- Zero-init → starts at gate=1.0 (neutral)
+- Range (0, 2): can suppress or amplify heads
+- torch.compile compatible (all static shapes)
+- Zero crash risk

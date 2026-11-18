@@ -1,0 +1,7 @@
+The diff confirms all accumulated improvements are preserved from the current best (exp90), and the only new changes for exp93 are:
+
+1. **DEPTH = 9** (was 8)
+2. **ASPECT_RATIO = 56** (was 64, keeping model_dim=512)
+3. **U-Net skip fix**: `if i >= half and mirror < half:` (handles middle layer for odd n_layer)
+
+Config will be: 9 layers, 512-dim, 4 heads, MLP 3x, multi-scale RoPE (2500,10000,40000,160000), VE on layers 0+8 (shared), U-Net skips (4 pairs + 1 middle), softcap 13, z-loss 1e-4. Ready for ralph.sh.

@@ -1,0 +1,7 @@
+Done. Experiment 106: **Sandwich norm** (post-sublayer RMSNorm) — 6th attempt.
+
+**Change**: 2 lines in `Block.forward` — wrap `self.attn(...)` and `self.mlp(...)` outputs with `norm()` before adding to the residual stream.
+
+**Rationale**: This normalizes each sublayer's contribution to O(1) scale, preventing residual stream magnitude growth across layers. It's a proven technique (PaLM, CogView) that was never tested on GPU due to 5 consecutive infra crashes (exp100-104). Infra is now stable (exp105 completed successfully).
+
+**Risk**: Very low — zero new parameters, minimal compute overhead, model starts identically to baseline due to c_proj zero-init.

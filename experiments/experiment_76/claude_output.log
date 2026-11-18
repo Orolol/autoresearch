@@ -1,0 +1,7 @@
+Done. Here's a summary of experiment #76:
+
+**Change**: Z-loss coefficient 1e-4 → 2e-4 (line 319 of train.py)
+
+**Rationale**: Clear directional signal — exp63 showed weaker z-loss (5e-5) hurt by +0.002. Stronger z-loss improves gradient flow through the softcap=13 tanh by keeping logits away from saturation. This is the 4th attempt (exp73/74/75 all crashed on infra, never tested on GPU).
+
+**Risk**: Zero crash/OOM risk. If too strong, mild regression ~0.001-0.003.

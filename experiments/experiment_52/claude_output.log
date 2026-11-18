@@ -1,0 +1,10 @@
+Done. Here's the summary:
+
+**Experiment #52: Muon momentum ceiling 0.95 -> 0.97**
+
+- **Change**: Single number in `get_muon_momentum()` — `frac * 0.95` becomes `frac * 0.97`
+- **Why**: 70% stronger Nesterov look-ahead (distance 32.3 vs 19.0). NS orthogonalization and NorMuon normalize step size independently, so this only affects direction weighting — inherently safe.
+- **Risk**: Minimal. Pure scalar change, no crash/OOM/speed risk.
+- **Expected**: ~0.001-0.002 improvement if beneficial, neutral or mild regression (~0.001-0.003) otherwise.
+
+train.py is modified, syntax verified, report written, run log updated.

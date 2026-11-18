@@ -1,0 +1,8 @@
+Everything looks correct. Let me verify one more thing — the `if self.local_attn` branch in forward won't break torch.compile with `dynamic=False` since it's a static boolean (determined at construction time), so torch.compile will trace through only the relevant branch for each layer.
+
+The implementation is clean:
+- **4 local layers (2-5)** get `q_conv` and `k_conv` (causal depthwise conv1d, kernel=4)
+- **Applied after** Q/K linear projection, **before** RoPE and QK-norm
+- **Identity init**: at step 0, conv passes input through unchanged → exact exp179 baseline
+- **16,384 new params** (~0.02% of model), ~3% compute overhead
+- **Trained with Muon** (ndim=3 → matrix_params group)

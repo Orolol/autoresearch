@@ -1,0 +1,12 @@
+All changes are clean and consistent. Summary of what experiment 10 does:
+
+**Multi-Token Prediction (MTP)** — adds an auxiliary loss that predicts token i+2 from position i.
+
+- `mtp_proj`: learned 512x512 linear projection (262K params, 0.4% of model)
+- During training: `lm_head(mtp_proj(hidden_states[:, :-1]))` predicts `targets[:, 1:]` (2-ahead tokens)
+- Auxiliary loss weight: 0.1 (conservative)
+- Shares the existing `lm_head` — no new embedding parameters
+- ~10-15% compute overhead from extra lm_head forward/backward
+- Z-loss from exp9 is preserved
+
+The bet: richer gradient signal per step (2 prediction targets instead of 1) compensates for ~10% fewer optimizer steps due to overhead.

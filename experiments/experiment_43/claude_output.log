@@ -1,0 +1,5 @@
+Done. **Experiment 43: softcap=12** (5th attempt, never tested on GPU).
+
+- **Change**: `softcap = 15` → `softcap = 12` in `forward()` (line 294)
+- **Why**: Tighter softcap improves gradient flow through tanh. Only 3 coarse values tested ({0, 15, 30}). Softcap is the most impactful HP after batch size. 4 previous attempts all crashed on RunPod infra.
+- **Risk**: Zero — single number change, no crash/OOM/speed risk

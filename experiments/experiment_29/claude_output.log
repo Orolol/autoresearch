@@ -1,0 +1,12 @@
+Done. Here's a summary of experiment 29:
+
+**EMA (Exponential Moving Average)** — 3rd attempt (exp26/27 crashed on RunPod infra, code never ran on GPU)
+
+**Changes** (6 lines):
+1. Clone all trainable params after `torch.compile` as EMA buffers
+2. After each optimizer step: `ema.lerp_(p.data, 0.005)` 
+3. Before eval: swap model params with EMA weights
+
+**Why**: All "more steps" strategies are exhausted. Quality per step is the only axis left. EMA smooths out SGD noise over ~200 steps, capturing the best of the convergence trajectory instead of one noisy endpoint.
+
+**Cost**: ~152MB extra VRAM, ~1-2ms/step overhead. Zero architectural risk.

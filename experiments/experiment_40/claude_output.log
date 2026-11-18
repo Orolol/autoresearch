@@ -1,0 +1,5 @@
+Done. Experiment #40 is ready:
+
+- **Change**: `min(step / 300, 1)` → `min(step / 100, 1)` in `get_muon_momentum` (line 555)
+- **Why**: Retry of exp38 (infra crash). Reduces Muon momentum warmup from 300 to 100 steps. With ~830 training steps, this means 88% of training at full 0.95 Nesterov momentum instead of 64%. Stronger look-ahead gradients = better convergence per step.
+- **Risk**: Zero. Single number change, no crash/OOM/speed risk.

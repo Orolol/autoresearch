@@ -1,0 +1,10 @@
+Code looks correct. The changes are minimal and clean:
+
+1. **Lines 82-85**: Added `local_attn` flag and `block_size=256` to `__init__`
+2. **Lines 111-123**: New `elif self.local_attn` branch that reshapes `(B, T, H, D)` → `(B*8, 256, H, D)`, runs SDPA on 256-token blocks, then reshapes back
+
+**Summary of experiment 149:**
+- **Idea**: Block-diagonal local attention for layers 2-5 (block_size=256), full attention for layers 0,1,6,7
+- **Motivation**: WINDOW_PATTERN never worked with SDPA. Block reshaping actually implements local attention. ~13% compute savings → more training steps (the same lever that gave the biggest win in exp14)
+- **Risk**: Hard block boundaries could hurt quality, but token shift + full-attention bookend layers + U-Net skips mitigate this
+- **Changes**: 2 new attributes in `__init__`, 1 new elif branch in `forward`. Zero new parameters.

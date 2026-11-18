@@ -1,0 +1,9 @@
+Everything looks correct. The changes are:
+
+1. **`CausalSelfAttention.__init__`**: Added `time_mix_k` and `time_mix_v` parameters (lines 75-77)
+2. **`CausalSelfAttention.forward`**: Token shift applied to K/V inputs only, Q uses original x (lines 81-86, 88-89)
+3. **`GPT.init_weights`**: time_mix params initialized to 0.0 (sigmoid(0)=0.5 = neutral equal mixing)
+4. **`GPT.setup_optimizer`**: 1D time_mix params separated from 2D matrix params, added to AdamW with scalar_lr settings
+5. **Assert updated** to account for the new param group
+
+**Experiment 126 summary**: RWKV-style token shift for attention K/V inputs. Before computing keys and values, each token's representation is mixed with the previous token's via learnable per-channel sigmoid gates. Q is unshifted. This gives K/V projections access to local bigram context before attention computes it — a simplified form of RWKV-6 time mixing, which is explicitly listed as a priority-1 architectural direction. Adds only 8192 params (0.01%), zero crash risk.

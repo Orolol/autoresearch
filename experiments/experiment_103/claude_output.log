@@ -1,0 +1,6 @@
+Done. Experiment 103 is ready:
+
+- **Change**: Sandwich norm — `x = x + norm(attn(norm(x)))` and `x = x + norm(mlp(norm(x)))` in `Block.forward` (line 132-133)
+- **Why**: Normalizes sublayer contributions to O(1) scale, preventing residual stream growth across 8 layers. Proven in PaLM/CogView. Never tested on GPU (exp100/101/102 = infra crashes).
+- **Risk**: Very low — 2-line change, zero new params, c_proj zero-init means identical start to baseline
+- **Expected range**: -0.003 to +0.005

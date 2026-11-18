@@ -1,0 +1,7 @@
+Done. **Exp24: DEVICE_BATCH_SIZE=64** (single line change).
+
+- `DEVICE_BATCH_SIZE = 32` → `64`
+- grad_accum drops from 4→2 (halves Python loop overhead per optimizer step)
+- VRAM: 10.1GB → ~15GB estimated (32GB available)
+- No architectural change, no crash risk
+- If it works: combine with other optimizations next

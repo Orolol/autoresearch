@@ -1,0 +1,1 @@
+Done. Experiment 66: **GeluSquared activation** (`F.gelu(x).square()` replaces `F.relu(x).square()` in MLP). One-line change at `train.py:119`. The hypothesis is that GELU's soft gradient flow through mildly negative activations helps in the undertrained regime, while the square still provides the sparsity benefit. Zero crash/OOM risk.

@@ -1,0 +1,12 @@
+All three changes are in place. Quick sanity check on the DEPTH=9 math:
+- `half = 9 // 2 = 4`, `skip_lambdas` has 4 elements (indices 0-3)
+- Layer 4 (middle): `i=4 >= 4` but `mirror=4 < 4` is False → skip NOT applied (correct)
+- Layer 5: `mirror=3 < 4` → True → `skip_lambdas[3] * skip_states[3]` (correct)
+- Layer 8: `mirror=0 < 4` → True → `skip_lambdas[0] * skip_states[0]` (correct)
+- VE on layers 0 and 8 (first and last) with shared weights (correct)
+- 4 RoPE bases for 4 heads (correct)
+
+The experiment is ready. Three changes to `train.py`:
+1. **ASPECT_RATIO = 56** (was 64) — model_dim stays at 512 with 9 layers
+2. **DEPTH = 9** (was 8) — one extra transformer layer
+3. **U-Net skip bug fix**: `if i >= half:` → `if i >= half and mirror < half:` — this was the root cause of all DEPTH=9 IndexErrors, and was never persisted to the main train.py despite being documented

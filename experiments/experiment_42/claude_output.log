@@ -1,0 +1,8 @@
+Done. Experiment #42 is ready:
+
+- **Change**: `beta2=0.95` -> `beta2=0.99` in Muon optimizer groups (line 273)
+- **Why**: Smoother per-row gradient variance tracking (~100-step window vs ~20-step). NorMuon's norm preservation makes it inherently safe — only changes per-row budget distribution, not total step magnitude. Analogous to Adam's beta2=0.999 being standard.
+- **Risk**: Zero. Single number change. No crash/OOM/speed risk.
+- **Expected**: ~0.001-0.003 improvement if smoother estimates help, neutral if not.
+
+This is a retry of exp41 which crashed on infra (never tested on GPU). `ralph.sh` can now launch the training.

@@ -1,0 +1,7 @@
+Done. Experiment #102 is ready:
+
+**Change**: Sandwich norm — wrap `attn()` and `mlp()` outputs with `norm()` before residual add in `Block.forward` (lines 131-134 of train.py).
+
+**Why**: Normalizes each sublayer contribution to O(1) scale, preventing residual stream growth across layers. Proven in PaLM/CogView. This is the 3rd attempt — exp100/101 both crashed on infra and never ran on GPU.
+
+**Risk**: Very low — 2-line change, zero new params, c_proj zero-init means identical behavior at init.

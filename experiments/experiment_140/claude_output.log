@@ -1,0 +1,9 @@
+Done. Here's the summary:
+
+**Experiment #140: Focal loss (gamma=0.5)**
+
+**What**: Replace uniform cross-entropy with focal-weighted cross-entropy during training. Each token's loss is weighted by `(1 - p_target)^0.5` — hard tokens (low model confidence) get ~1.4x weight, easy tokens get ~0.4x weight. Weights are normalized to preserve loss magnitude. Eval path unchanged.
+
+**Why**: Loss function is the last unexplored axis after 139 experiments. All architectural changes, optimizer settings, and hyperparameters are exhausted. Focal loss focuses the gradient budget on predictions with the highest BPB improvement potential. It's fundamentally different from label smoothing (exp34, catastrophic) because it reweights examples rather than smoothing targets.
+
+**Risks**: Medium regression risk (loss modifications are dangerous territory). High probability of neutral (mild gamma). Zero crash risk.

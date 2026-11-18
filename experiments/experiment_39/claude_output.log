@@ -1,0 +1,6 @@
+Done. Experiment 39 is ready:
+
+- **Change**: `softcap = 15` -> `softcap = 12` (line 294 of train.py)
+- **Why**: Tighter softcap improves gradient flow through tanh. Only {0, 15, 30} tested so far. 12 provides sufficient dynamic range for 32768 vocab. Synergizes with z-loss.
+- **Risk**: Zero. Single number change. No crash/OOM/speed risk.
+- **Note**: This is the 3rd attempt — exp36/37 both crashed on RunPod infra, never ran on GPU.

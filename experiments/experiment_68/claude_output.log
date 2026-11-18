@@ -1,0 +1,10 @@
+Everything looks correct. All changes are consistent:
+
+1. `qk_scales` parameter created in GPT.__init__ (line 151)
+2. Initialized to 1.0 in init_weights (line 183)
+3. Passed through forward → Block → CausalSelfAttention (lines 298, 134, 76)
+4. Applied after QK-norm: `q = q * qk_scale[None, None, :, None]` (line 93)
+5. Own AdamW optimizer group at lr=0.05 (line 275)
+6. Assertion and num_scaling_params updated (lines 246, 263-264)
+
+The change is minimal (32 extra scalars), initialized to identity (no behavior change at step 0), and gives each of the 32 (layer, head) pairs its own attention sharpness control — restoring a degree of freedom that QK-norm removes.

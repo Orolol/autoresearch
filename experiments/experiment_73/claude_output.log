@@ -1,0 +1,9 @@
+Done. Here's the summary:
+
+**Experiment 73**: Z-loss coefficient 1e-4 → 2e-4
+
+**Change**: Single number on line 319 of train.py: `z_loss = 2e-4 * logz.square().mean()`
+
+**Rationale**: Clear directional signal — exp63 tested 5e-5 and regressed (+0.002), meaning stronger z-loss is better. 2e-4 doubles the regularization strength, improving gradient flow through the softcap=13 tanh layer.
+
+**Risk**: Zero crash/OOM risk. Worst case: mild regression if 2e-4 overshoots the optimum.

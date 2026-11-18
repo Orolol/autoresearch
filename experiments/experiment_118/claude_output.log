@@ -1,0 +1,7 @@
+Everything looks correct. All changes are consistent:
+- `wte_v_scales` defined in `__init__`, initialized in `init_weights`, counted in `num_scaling_params` and `estimate_flops`
+- Passed from `GPT.forward` → `Block.forward` → `CausalSelfAttention.forward`
+- Optimizer group added with proper assertion
+- Zero-init ensures exact baseline at step 0
+
+**Summary of experiment 118**: Added WTE-as-value identity — injects the normalized token embedding (x0) directly into attention values at every layer via 32 learnable per-head scalars (wte_v_scales). This extends the VE concept (most productive improvement direction) to middle layers 1-6 which currently lack token identity in values. Unlike exp85 (VE all layers, +0.010) which used a 16.8M-param shared embedding, this reuses the existing wte embedding at zero parameter/memory/compute cost. Init=0 → exact baseline. Expected range: -0.003 to +0.003.

@@ -1,0 +1,195 @@
+experiment	val_bpb	peak_vram_mb	status	description
+0	1.088007	11.1	keep	baseline
+1	1.111258	11.1	discard	Remove all Value Embeddings (VE=0) to test if the model can match baseline without any VE overhead.
+2	1.093279	11.1	discard	Increase logit softcap from 15 to 30 to allow more expressive predictions while keeping training stable.
+3	1.108641	10.7	discard	Remove x0_lambdas (per-layer skip connection from initial embedding) to simplify the residual stream.
+4	1.088248	10.8	discard	GQA (Grouped Query Attention) with n_kv_head=2 to reduce parameters by ~14% and increase training throughput.
+5	1.091936	11.1	discard	Remove all weight decay (WEIGHT_DECAY=0.0) to test if Muon's cautious WD is counterproductive during short 5-minute trai
+6	1.098882	11.1	discard	Halve TOTAL_BATCH_SIZE from 2^18 to 2^17 to double optimizer steps and push the "more steps = better convergence" hypoth
+7	0.000000	0.0	crash	Increase MATRIX_LR from 0.04 to 0.06 (+50%) to accelerate convergence in the undertrained regime.
+8	1.088767	11.1	discard	Re-run MATRIX_LR=0.06 (+50%) which crashed in exp7 due to RunPod API timeout (never actually tested).
+9	1.087971	11.1	keep	Z-loss regularization (PaLM-style) to improve logit calibration and gradient flow through the softcap layer.
+10	0.000000	0.0	crash	Multi-Token Prediction (MTP) — auxiliary loss predicting token i+2 from position i via learned projection + shared lm_
+11	0.000000	0.0	crash	Embedding tying (wte = lm_head weight sharing) to save 16.8M params (22% of total model) and simplify the architecture.
+12	1.093492	12.3	discard	Multi-Token Prediction (MTP) retry — auxiliary loss predicting token i+2 via learned projection + shared lm_head (exp1
+13	1.089407	11.1	discard	Reduce WARMDOWN_RATIO from 0.6 to 0.4 to spend 60% of training at full learning rate instead of 40%.
+14	1.079602	10.1	keep	Reduce MLP hidden dimension from 4x to 3x to decrease compute per step and get more training steps in 5 minutes.
+15	1.082175	9.6	discard	Reduce MLP hidden dimension from 3x to 2.5x to further decrease compute per step and get more training steps in 5 minute
+16	0.000000	0.0	crash	Enable torch.compile(mode="max-autotune") for CUDA graphs and autotuned Triton kernels to increase training throughput.
+17	0.000000	0.0	crash	Retry torch.compile(mode="max-autotune") with cudagraph_mark_step_begin() fix to enable CUDA graphs and autotuned Triton
+18	1.112418	9.0	discard	Reduce DEPTH from 8 to 7 layers to decrease compute per step and get more training steps in 5 minutes.
+19	0.000000	0.0	crash	Factored lm_head with 256-dim bottleneck projection to reduce output layer compute by ~50% and get more training steps.
+20	1.095730	10.1	discard	Retry factored lm_head with 256-dim bottleneck projection to reduce output layer compute by ~50% and get more training s
+21	1.098823	11.0	discard	Enable torch.compile(mode="max-autotune-no-cudagraphs") for autotuned Triton kernels without CUDA graphs.
+22	1.080504	10.6	discard	Iso-compute depth-for-width swap: DEPTH=9 + MLP 2.5x + ASPECT_RATIO=56 to add an extra transformer layer at near-zero co
+23	0.000000	0.0	crash	Switch lm_head from AdamW to Muon optimizer for Newton-Schulz orthogonalized updates on the largest parameter matrix.
+24	1.095282	19.7	discard	Increase DEVICE_BATCH_SIZE from 32 to 64 to halve gradient accumulation steps (4→2) and improve GPU utilization with t
+25	0.000000	0.0	crash	Replace ReluSquared MLP with SwiGLU at iso-compute (2x hidden dim = same FLOPs/params as 3x ReluSquared).
+26	0.000000	0.0	crash	EMA (Exponential Moving Average) of model weights for smoother eval — average parameters during training to reduce noi
+27	0.000000	0.0	crash	Retry EMA (Exponential Moving Average) of model weights — exp26 crashed due to infra, never tested on GPU.
+28	0.000000	0.0	crash	Retry SwiGLU at iso-compute (exp25 crashed infra, never tested on GPU) — replace ReluSquared MLP with SwiGLU gating at
+29	1.096033	10.2	discard	EMA (Exponential Moving Average) of model weights (decay=0.995) — retry of exp26/27 which both crashed on infra, never
+30	1.083872	10.1	discard	Replace ReluSquared MLP with SwiGLU at iso-compute (2x hidden dim with fused gate+up = same FLOPs/params as 3x ReluSquar
+31	1.085796	10.8	discard	DEPTH=9 + GQA (n_kv_head=2) + MLP 3x — iso-compute reallocation from attention to MLP, preserving the winning MLP 3x w
+32	0.000000	0.0	crash	Retry lm_head with Muon optimizer at conservative LR (exp23 crashed, likely infra — never tested on GPU).
+33	0.000000	0.0	crash	Label smoothing (alpha=0.1) to improve generalization and gradient flow through softcap.
+34	1.119757	12.1	discard	Label smoothing (alpha=0.1) retry — exp33 crashed on infra, never tested on GPU. Fixed: smoothing applied only during 
+35	1.084106	10.1	discard	Cosine warmdown schedule instead of linear warmdown to improve LR decay shape during the 60% warmdown phase.
+36	0.000000	0.0	crash	Reduce logit softcap from 15 to 12 to improve gradient flow through tanh while preserving sufficient logit dynamic range
+37	0.000000	0.0	crash	Retry softcap=12 (exp36 crashed on infra, never tested on GPU) to improve gradient flow through tanh.
+38	0.000000	0.0	crash	Reduce Muon momentum warmup from 300 to 100 steps to reach full momentum faster in the ~830-step training budget.
+39	0.000000	0.0	crash	Retry softcap=12 (3rd attempt — exp36/37 crashed on infra, never tested on GPU) to improve gradient flow through tanh.
+40	0.000000	0.0	crash	Retry Muon momentum warmup 300→100 steps (exp38 crashed infra, never tested on GPU) to reach full 0.95 momentum faster
+41	0.000000	0.0	crash	Increase Muon beta2 from 0.95 to 0.99 for smoother NorMuon per-row step sizing over a 100-step averaging window.
+42	0.000000	0.0	crash	Retry Muon beta2=0.99 (exp41 crashed infra, never tested on GPU) for smoother NorMuon per-row step sizing.
+43	0.000000	0.0	crash	Reduce logit softcap from 15 to 12 (5th attempt — exp36/37/39 all crashed on infra, never tested on GPU) for better gr
+45	1.078486	10.1	keep	Reduce logit softcap from 15 to 13 to improve gradient flow through tanh while preserving sufficient logit dynamic range
+46	0.000000	0.0	crash	Reduce logit softcap from 13 to 11 to further improve gradient flow through tanh, continuing the winning softcap tighten
+47	0.000000	0.0	crash	Retry softcap=11 (exp46 crashed infra, never tested on GPU) to further tighten gradient flow through tanh.
+48	1.079533	10.1	discard	Retry softcap=11 (3rd attempt — exp46/47 crashed infra, never tested on GPU) to further tighten gradient flow through 
+49	0.000000	0.0	crash	Reduce Muon momentum warmup from 300 to 100 steps to reach full 0.95 momentum faster in the ~830-step training budget.
+50	0.000000	0.0	crash	Increase Muon beta2 from 0.95 to 0.99 for smoother NorMuon per-row adaptive step sizing over a ~100-step averaging windo
+51	0.000000	0.0	crash	Reduce Muon momentum warmup from 300 to 100 steps to reach full 0.95 momentum faster in the ~830-step training budget.
+53	1.078587	10.1	discard	experiment 53
+54	1.078476	10.1	keep	experiment 54
+55	1.078706	10.1	discard	experiment 55
+52	0.000000	0.0	crash	Increase Muon Nesterov momentum ceiling from 0.95 to 0.97 for stronger gradient look-ahead during training.
+54	1.085454	9.6	discard	Multi-Query Attention (MQA, n_kv_head=1) to reduce KV parameters and VE embedding size for faster training throughput.
+55	1.079176	10.1	discard	Reduce Muon momentum warmup from 300 to 100 steps to reach full 0.95 Nesterov momentum faster.
+56	0.000000	0.0	crash	Increase Muon beta2 from 0.95 to 0.99 for smoother NorMuon per-row adaptive step sizing.
+57	1.079416	10.1	discard	Increase Muon beta2 from 0.95 to 0.99 for smoother NorMuon per-row adaptive step sizing.
+58	0.000000	0.0	crash	Add gradient clipping (max_norm=1.0) to the training loop — standard LLM practice currently missing from the pipeline.
+59	1.082534	10.1	discard	Increase Muon Nesterov momentum ceiling from 0.95 to 0.97 for 70% stronger gradient look-ahead (retry of exp52 which cra
+60	1.112265	9.1	discard	Parallel attention + MLP (PaLM/GPT-J style) — both sublayers share the same normalized input instead of sequential pro
+61	1.090947	10.1	discard	Reduce HEAD_DIM from 128 to 64 to double the number of attention heads (4 to 8) at zero parameter/compute cost.
+62	1.087990	10.1	discard	Add gradient clipping (max_norm=1.0) to the training loop — retry of exp58 which crashed on infra, never tested on GPU
+63	1.080565	10.1	discard	Reduce z-loss coefficient from 1e-4 to 5e-5 to halve partition function regularization strength.
+64	1.082924	10.1	discard	Add tiny LR warmup (WARMUP_RATIO=0.0 to 0.01) to stabilize the initial gradient phase after compilation.
+65	1.091849	10.1	discard	Reduce RoPE base frequency from 10000 to 1000 for better positional resolution within 2048 context length.
+66	1.084504	10.1	discard	Replace ReluSquared with GeluSquared activation in MLP for softer gradient flow through negative activations.
+67	0.000000	0.0	crash	Per-head learnable attention temperature (qk_scales) to let each head and layer optimize its own attention sharpness, ov
+68	1.080678	10.1	discard	Per-head learnable attention temperature (qk_scales) to restore per-head sharpness control removed by QK-norm — retry 
+69	1.090227	10.1	discard	Reduce TOTAL_BATCH_SIZE from 262144 to 196608 (grad_accum 4 to 3) for 33% more optimizer steps with only 15% noisier gra
+70	1.090516	10.1	discard	Decouple AdamW/Muon LR schedules — remove warmdown for AdamW groups while keeping Muon warmdown intact.
+71	1.077355	10.1	keep	U-Net skip connections — connect early layer outputs to mirror late layers (0→7, 1→6, 2→5, 3→4) with learnable
+72	0.000000	0.0	crash	Enable actual sliding window attention via flex_attention for the SDPA path — the SSSL window pattern was designed but
+73	0.000000	0.0	crash	Increase z-loss coefficient from 1e-4 to 2e-4 to strengthen logit partition function regularization, following the clear
+74	0.000000	0.0	crash	Increase z-loss coefficient from 1e-4 to 2e-4 to strengthen logit partition function regularization (retry of exp73 whic
+75	0.000000	0.0	crash	Increase z-loss coefficient from 1e-4 to 2e-4 to strengthen logit partition function regularization (3rd attempt — exp
+76	1.078430	10.1	discard	Increase z-loss coefficient from 1e-4 to 2e-4 to strengthen logit partition function regularization.
+77	0.000000	0.0	crash	Mid-MLP normalization (NormFormer-style) — add RMSNorm between ReluSquared activation and output projection in MLP.
+78	0.000000	0.0	crash	Mid-MLP normalization (NormFormer-style) — add RMSNorm between ReluSquared activation and output projection in MLP (re
+79	1.079762	10.1	discard	Mid-MLP normalization (NormFormer-style) — add RMSNorm between ReluSquared activation and output projection in MLP (3r
+80	1.077197	10.1	keep	Multi-scale RoPE: per-head base frequencies (2500, 10000, 40000, 160000) for attention head specialization across distan
+81	1.080138	10.5	discard	Pre-output MLP — add a lightweight feedforward layer (2x expansion, ReluSquared) before lm_head for extra non-linear d
+82	0.000000	0.0	crash	Initialize skip_lambdas to 0.05 instead of 0.0 for immediate U-Net skip connection activation.
+83	0.000000	0.0	crash	Extend Value Embedding to first AND last layer with shared weights for bookend token identity in value computation.
+84	1.072876	10.2	keep	Extend Value Embedding to first AND last layer with shared weights for bookend token identity in value computation (retr
+85	1.081672	10.8	discard	Extend Value Embedding to ALL 8 layers with shared weights for universal token identity in value computation.
+86	0.000000	0.0	crash	Increase DEPTH from 8 to 9 layers (ASPECT_RATIO=56) for deeper modeling capacity with accumulated gradient flow improvem
+87	0.000000	0.0	crash	Increase DEPTH from 8 to 9 layers (ASPECT_RATIO=56) — retry of exp86 which crashed on infra, never tested on GPU.
+88	0.000000	0.0	crash	experiment 88
+89	1.073159	10.2	discard	experiment 89
+90	1.072821	10.2	keep	experiment 90
+91	1.072978	10.2	discard	experiment 91
+92	0.000000	0.0	crash	DEPTH=9 with U-Net skip bug fix for odd depths — exp86/87 crashed due to IndexError in skip_lambdas indexing, not infr
+93	0.000000	0.0	crash	DEPTH=9 retry (5th attempt) with U-Net skip bug fix for odd depths — exp86/87/88/92 all crashed.
+94	0.000000	0.0	crash	DEPTH=9 (6th attempt) with U-Net skip bug fix for odd depths — previous 5 attempts all crashed.
+95	0.000000	0.0	crash	DEPTH=9 (7th attempt) with U-Net skip bug fix for odd depths — previous 6 attempts all crashed (bug or infra).
+97	1.079870	11.3	discard	DEPTH=9 with U-Net skip bug fix — the fix was missing from the persisted train.py despite being documented.
+98	1.070366	10.2	keep	Initialize skip_lambdas to 0.05 instead of 0.0 for immediate U-Net skip connection activation from step 1.
+99	0.000000	0.0	crash	Differential Attention (DiffTransformer) — split each head into 2 sub-heads, subtract paired attention outputs to canc
+100	0.000000	0.0	crash	Sandwich norm (post-sublayer RMSNorm) on both attention and MLP outputs to normalize residual stream contributions.
+101	0.000000	0.0	crash	Retry sandwich norm (post-sublayer RMSNorm) — exp100 crashed on infra, never tested on GPU.
+102	0.000000	0.0	crash	Sandwich norm (post-sublayer RMSNorm) on attention and MLP outputs — 3rd attempt after 2 infra crashes.
+103	0.000000	0.0	crash	Sandwich norm (post-sublayer RMSNorm) on attention and MLP outputs to normalize residual stream contributions — 4th at
+104	0.000000	0.0	crash	Sandwich norm (post-sublayer RMSNorm) on attention and MLP outputs — 5th attempt after 4 infra crashes.
+105	1.079623	10.4	discard	Differential Attention (DiffTransformer) with proper V-halving for noise cancellation and ~12% parameter savings.
+106	1.078373	11.2	discard	Sandwich norm (post-sublayer RMSNorm) on attention and MLP outputs — 6th attempt after 5 infra crashes.
+107	1.093080	10.7	discard	Causal depthwise convolution before MLP for local feature mixing (Mamba/H3-inspired).
+108	1.070530	10.2	discard	VE embedding LR separation — lower VE LR from 0.6 to 0.2 for more stable value reference signal.
+109	1.070391	10.2	discard	Wider multi-scale RoPE range — (1000, 5000, 50000, 500000) for greater head specialization across distance scales.
+110	1.087675	10.3	discard	Schedule-Free AdamW (Defazio & Mishchenko 2024) for embedding/scalar optimizer groups, replacing linear warmdown with Po
+111	1.071584	10.7	discard	Per-head learned output scales in attention — learnable per-head scaling before output projection (c_proj).
+112	1.070199	10.2	keep	Widen VE gate input from 32 channels to full n_embd (512) for richer per-head gating information.
+113	1.070299	10.2	discard	Key Embedding (KE) — extend VE to also contribute to keys via a separate learned gate, reusing the shared value embedd
+114	1.078830	11.6	discard	Per-dimension residual and x0 lambdas — widen from scalar per-layer to per-channel for finer residual stream routing.
+115	1.069319	10.2	keep	VE weight decay 0.002 — add mild L2 regularization to Value Embedding parameters to prevent rare token VE drift.
+116	1.081621	11.2	discard	Soft Mixture of Depths — input-dependent per-block gating for compile-friendly token routing.
+117	1.070293	10.2	discard	wte embedding weight decay 0.002 — add mild L2 regularization to token embeddings, mirroring VE WD success (exp115).
+118	1.082322	10.2	discard	WTE-as-value identity for all layers — inject normalized wte embedding (x0) directly into attention values via per-hea
+119	1.069415	10.2	discard	VE weight decay 0.005 — increase VE L2 regularization from 0.002 to 0.005 to test if stronger rare-token drift prevent
+120	1.069504	10.2	discard	VE betas (0.9, 0.95) — increase VE Adam beta1 from 0.8 to 0.9 for smoother gradient EMA on sparsely-updated Value Embe
+121	0.000000	0.0	crash	FP8 matmuls on Blackwell — replace all nn.Linear calls in MLP and attention with float8_e4m3fn matmuls via torch._scal
+122	1.068180	10.2	keep	Non-uniform MLP widths — layers 0-3 get 2x MLP expansion, layers 4-7 get 4x, iso-compute with current uniform 3x.
+123	0.000000	0.0	crash	Gradual MLP width ramp — linear expansion [1,2,2,3,3,4,4,5] across 8 layers, iso-compute with previous 2x/4x split.
+124	0.000000	0.0	crash	Gradual MLP width ramp [2,2,2,3,3,3,4,5] with min 2x — concentrates maximum capacity in the final prediction layer, is
+125	1.071063	10.2	discard	Increase UNEMBEDDING_LR from 0.004 to 0.01 (2.5x) to improve lm_head convergence — 22% of model params, never tuned.
+126	1.067854	11.7	keep	RWKV-style token shift for attention K/V inputs — learnable per-channel mixing of current and previous token before K/
+127	1.075740	11.8	discard	Extend RWKV-style token shift to Q projection — full Q/K/V time mixing for all three attention projections.
+128	1.074396	11.2	discard	V-only token shift — remove K shift from exp126, keep only V shift to avoid blurring key position identity before RoPE
+129	1.067071	11.7	keep	More extreme non-uniform MLP widths — 1.5x/4.5x split instead of 2x/4x, iso-compute with baseline average of 3x.
+130	1.068039	11.7	discard	Even more extreme non-uniform MLP widths — 1.25x/4.75x split instead of 1.5x/4.5x, iso-compute with baseline average o
+131	1.067803	12.2	discard	RWKV-style input-dependent per-head attention output gating on all layers.
+132	1.069988	11.7	discard	Affine RMSNorm — add learnable per-channel gain parameters to pre-sublayer norms and final norm.
+133	1.067579	11.5	discard	Remove post-embedding RMSNorm — let wte embeddings retain magnitude information instead of forcing unit RMS.
+134	1.067798	11.7	discard	Lower EMBEDDING_LR from 0.6 to 0.4 — tuning the largest untested hyperparameter controlling 22% of model parameters.
+135	1.067172	11.7	discard	Intermediate multi-scale RoPE range (1500, 8000, 60000, 300000) — 200x span vs current 64x span.
+136	0.000000	0.0	crash	Increase WARMDOWN_RATIO from 0.6 to 0.7 for longer, more gradual LR decay.
+137	1.066944	11.7	keep	Retry WARMDOWN_RATIO=0.7 (exp136 crashed on infra) — longer, more gradual LR decay exploiting the strongest hyperparam
+138	1.067077	11.7	discard	Increase WARMDOWN_RATIO from 0.7 to 0.8 — continuing the strongest monotonic hyperparameter trend in 137 experiments.
+139	1.067816	11.7	discard	Constant weight decay — remove linear WD schedule decay to prevent double-decay with LR warmdown.
+140	1.069145	11.7	discard	Focal loss (gamma=0.5) to focus learning on hard-to-predict tokens instead of uniform cross-entropy weighting.
+141	1.064626	12.2	keep	Sparse attention gate — per-head output gating using only the first 8 dims of input, inspired by modded-nanogpt PR#117
+142	1.068535	12.7	discard	Sparse MLP gate — per-group output gating using first 8 dims of input, extending exp141's successful sparse attention 
+143	0.000000	0.0	crash	Attention gate_dim tuning: increase from 8 to 12 (3x n_head) for wider sparse input to per-head output gate.
+144	0.000000	0.0	crash	Attention gate_dim tuning: reduce from 8 to 4 (1×n_head) for perfectly square Muon-optimal gate matrix.
+146	1.064760	12.2	discard	Attention gate_dim=4 (1x n_head, perfectly square Muon matrix) — retry of exp144 which crashed on infra, never tested 
+147	1.065164	12.2	discard	Attention gate_dim=12 (3x n_head) — retry of exp143 which crashed on infra, never GPU-tested.
+148	1.071212	12.5	discard	Sparse per-head gating on U-Net skip connections — extend the winning sparse gating pattern (exp141) to cross-layer in
+149	1.063080	12.2	keep	Block-diagonal local attention for middle layers (2-5) with block_size=256, keeping full attention for layers 0, 1, 6, 7
+150	1.063298	12.2	discard	Extend local attention from layers 2-5 to layers 1-6 (bookend-only full attention), aligning VE layers with global conte
+151	1.063407	12.2	discard	Reduce local attention block_size from 256 to 128 for middle layers (2-5) to gain more training steps.
+152	1.068952	13.3	discard	Cross-block linear attention recurrence for local layers — propagate KV state between blocks for long-range context at
+153	1.062436	12.2	keep	Dynamic attention temperature — input-dependent per-head Q scaling after QK-norm for adaptive attention sharpness.
+154	1.067878	12.2	discard	Dynamic key temperature — input-dependent per-head K scaling after QK-norm, complementary to Q-temp.
+155	1.068479	12.7	discard	Per-head input-dependent V scaling — supply-side value magnitude modulation complementary to demand-side attention gat
+156	0.000000	0.0	crash	Partial Rotary Position Embedding (50%) — apply RoPE to only the first 64 of 128 head dimensions, leaving the rest pos
+157	1.064943	12.2	discard	Partial Rotary Position Embedding (50%) — retry of exp156 (infra crash), apply RoPE to only 64/128 head dims for conte
+158	nan	12.7	discard	Cross-layer MLP residual connection — direct skip from each layer's MLP output to the next layer's MLP input for progr
+159	1.064835	12.5	discard	Hybrid local/global attention heads in middle layers — 1 global head + 3 local heads for cross-block context without f
+160	1.066460	12.2	discard	Learned absolute position embeddings added to token embeddings, complementing RoPE with explicit absolute position for M
+161	1.066087	12.0	discard	Layer-conditional activation — plain ReLU for early layers (0-3), ReluSquared for late layers (4-7).
+162	1.070433	13.2	discard	Value centroid injection — inject causal running mean of V into attention output via learned per-head gate for global 
+163	1.078273	12.3	discard	Adaptive x0 injection — input-dependent per-position gating on x0_lambdas using sparse gating pattern for content-depe
+164	0.000000	0.0	crash	torch.compile(mode="reduce-overhead") for CUDA graph optimization to increase training throughput and get more steps.
+165	1.063187	12.2	discard	x0_lambdas init reduced from 0.1 to 0.05 for less raw embedding noise in deep layers.
+166	1.062787	12.2	discard	Increase EMBEDDING_LR from 0.6 to 0.8 for faster token embedding convergence in the largest parameter group (22% of mode
+167	1.063240	13.2	discard	Learnable softcap — replace fixed softcap=13 constant with a gradient-optimized parameter via softplus(raw)+1 for cont
+168	1.064129	12.2	discard	WEIGHT_DECAY=0.1 — AB-test lower cautious weight decay for Muon optimizer (currently 0.2, only 0.0 tested before).
+169	0.000000	0.0	crash	FP8 MLP-only matmuls via torch._scaled_mm for ~2x MLP throughput on Blackwell FP8 tensor cores.
+171	1.062310	12.2	keep	LR Floor — set FINAL_LR_FRAC=0.1 to prevent learning rate from decaying to zero during warmdown, inspired by modded-na
+172	1.064116	12.2	discard	Increase FINAL_LR_FRAC from 0.1 to 0.15 — continue the winning LR floor trend from exp171, matching the modded-nanogpt
+174	0.000000	0.0	crash	Partitioned Hyperconnections — 2-lane residual stream with learned per-sublayer write weights (modded-nanogpt PR#230). | CLASSIFICATION: INFRA
+175	0.000000	0.0	crash	Partitioned Hyperconnections — retry of exp174 (INFRA crash, code never ran). 2-lane residual stream with learned per- | CLASSIFICATION: INFRA
+177	1.066348	13.8	discard	Low-rank cross-block recurrent state for local attention layers with forgetting gate and zero-init output.
+178	1.082753	13.2	discard	Sigmoid attention for local layers (2-5) — replace softmax with sigmoid gating for independent per-position attention 
+179	1.050748	13.8	keep	Chunkwise linear attention with learned per-head decay replacing block-diagonal softmax SDPA in local layers (2-5) — p
+180	1.094853	15.4	discard	Extend chunkwise linear attention to ALL 8 layers, eliminating softmax entirely from the model.
+181	nan	14.2	discard	GLA-style input-dependent decay for chunkwise linear attention in local layers (2-5) — content-addressed forgetting re
+182	0.000000	0.0	crash	Multi-scale decay initialization + chunk_size=512 for chunkwise linear attention in local layers (2-5). | CLASSIFICATION: INFRA
+183	1.056455	14.3	discard	Mamba-style causal depthwise convolution (kernel=4) on Q/K projections in local linear attention layers (2-5) for local 
+184	1.050168	13.8	keep	experiment 184
+185	1.049879	13.8	keep	experiment 185
+186	1.050069	13.8	discard	experiment 186
+189	1.055929	15.2	discard	Partitioned Hyperconnections — 2-lane residual stream where attention reads lane 0, MLP reads lane 1, both write to bo
+190	1.052605	13.8	discard	Multi-scale decay init + RoPE-free linear attention for local layers (2-5) — head specialization via diverse temporal 
+191	1.050692	14.3	discard	GLA-style input-dependent decay for chunkwise linear attention in local layers (2-5) — content-addressed forgetting wi
+192	1.054170	14.6	discard	Extend chunkwise linear attention from layers 2-5 to layers 1-6 — VE-bookend-only global attention for compute savings
+193	1.049078	13.8	keep	RetNet-style hybrid attention for local layers — softmax intra-chunk + linear recurrence cross-chunk with learned log-
+194	1.052590	14.7	discard	Increase chunk_size from 256 to 512 for hybrid local attention layers (2-5) — larger softmax intra-chunk windows + few
+195	1.105106	26.3	discard	State-augmented hybrid attention — inject 16 virtual memory tokens from recurrent state S into intra-chunk softmax for
+196	1.064450	14.5	discard	DeltaNet-style error-correcting state update for cross-chunk linear recurrence in local attention layers (2-5).
+197	1.060267	14.5	discard	RoPE-free cross-chunk recurrence + multi-scale decay init for hybrid local attention layers (2-5).
+198	1.051193	13.8	discard	Continuous MLP width ramp [1.0, 1.25, 1.75, 2.25, 3.25, 4.25, 5.0, 5.25] replacing coarse 1.5x/4.5x two-step split for i
+199	1.048702	14.0	keep	Pathway-specific attention gating for hybrid local layers — separate cross-chunk gate gives per-position control over 

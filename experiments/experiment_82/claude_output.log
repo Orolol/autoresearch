@@ -1,0 +1,5 @@
+Done. Experiment #82: **skip_lambdas init 0.0 → 0.05** to give U-Net skip connections immediate activation.
+
+- **Change**: Single line in `init_weights()` at line 188: `fill_(0.05)` instead of `fill_(0.0)`
+- **Why**: U-Net skips were the #2 biggest win (exp71). With only ~830 steps and slow momentum (beta1=0.96), the lambdas need many steps to become useful. Starting at 0.05 gives immediate gradient shortcuts.
+- **Risk**: Minimal — 0.05 is small relative to resid_lambdas (1.0) and x0_lambdas (0.1). Zero crash/OOM/compute cost.

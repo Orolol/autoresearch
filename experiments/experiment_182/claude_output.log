@@ -1,0 +1,8 @@
+Everything looks correct. Two clean changes:
+
+1. **chunk_size 256 → 512** (line 88): Larger intra-chunk attention window, fewer recurrent transitions
+2. **Multi-scale decay init** (lines 285-291): Per-head decay rates [2.0, 3.5, 5.0, 7.0] → gamma ≈ [0.88, 0.97, 0.99, 0.999] → effective context [8, 31, 143, 1000] tokens
+
+**Rationale**: exp181 GLA input-dependent decay produced NaN. These changes follow the priority queue's recommendation while adding structural head specialization (multi-scale decay) analogous to the successful multi-scale RoPE (exp80). The slowest-decay head (gamma ≈ 0.999) gives near-full-sequence context through the recurrent state, while fast-decay heads focus on sharp local patterns.
+
+**Risk**: Medium regression risk from ~67% more local attention compute (512² chunks instead of 256²), but still far cheaper than global SDPA (2048²). Very low crash risk — same code path, different constants.

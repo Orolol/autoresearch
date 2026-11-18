@@ -1,0 +1,15 @@
+All done. Here's a summary of experiment 160:
+
+**Idea:** Learned absolute position embeddings — add a (2048, 512) learned parameter to token embeddings before normalization.
+
+**Why:** The model currently has ZERO absolute position encoding. RoPE only provides relative position in Q/K (attention-side). The MLP and residual stream are completely position-blind. Adding learned PE creates a hybrid: RoPE for relative attention patterns + learned PE for absolute position everywhere (MLP, x0 propagation, all layers). This is a genuinely untested information pathway in this codebase.
+
+**Changes to train.py:**
+- `GPT.__init__`: added `self.pos_embd` parameter (2048 x 512)
+- `GPT.init_weights`: cast to bf16
+- `GPT.forward`: `x = wte(idx) + pos_embd[:T]` before norm
+- `GPT.estimate_flops`: excluded from matmul FLOPs
+- `GPT.num_scaling_params`: added as separate category
+- `GPT.setup_optimizer`: own AdamW group with embedding_lr
+
+**Risks:** Medium-high chance of neutral (MLP may not need absolute position), very low crash risk (zero-init, standard ops, static shapes). 1.05M new params (1.5% of model).

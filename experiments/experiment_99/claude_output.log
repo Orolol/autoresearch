@@ -1,0 +1,9 @@
+Done. Here's the summary of experiment #99:
+
+**Idea**: Differential Attention (DiffTransformer) — after RoPE + QK-norm, split each head's Q/K/V into 2 sub-heads of dim 64, run SDPA with 8 sub-heads instead of 4, then subtract paired outputs (`y_a - 0.5 * y_b`) to cancel attention noise. Also halved c_proj from 512x512 to 512x256, saving ~1M params across 8 layers.
+
+**Changes**: 2 edits in `CausalSelfAttention` (c_proj dim in `__init__`, differential reshape+subtract in `forward`).
+
+**Why it might work**: Noise cancellation from the DiffTransformer paper. The split after RoPE means sub-head 0 gets low-frequency positional info, sub-head 1 gets high-frequency — subtraction retains only distinctive patterns. Plus ~5% fewer FLOPs from smaller c_proj → more training steps.
+
+**Main risk**: Value dim per logical head drops from 128 to 64, reducing information capacity. HEAD_DIM=64 alone was +0.012 (bad), though DiffAttn is fundamentally different. Expected range: -0.005 to +0.015.

@@ -1,0 +1,9 @@
+Done. Here's the summary:
+
+**Experiment 164**: `torch.compile(mode="reduce-overhead")` — CUDA graph optimization to reduce kernel launch overhead and get more training steps.
+
+**Change**: One line — `mode="reduce-overhead"` added to `torch.compile()` call (line 629).
+
+**Why**: The "more steps" lever has been the most consistent source of improvement. With ~100+ kernel launches per forward pass and MFU likely 30-40%, there's significant launch overhead that CUDA graphs can eliminate. This is the ONLY untested compile mode.
+
+**Risk**: Medium crash risk (CUDA graphs need stable memory), but if it runs it's strictly faster. No regression possible — same model, same math.

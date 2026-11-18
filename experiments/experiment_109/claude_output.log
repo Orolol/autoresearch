@@ -1,0 +1,7 @@
+Done. Here's a summary of experiment #109:
+
+**Change**: Wider multi-scale RoPE bases — `(2500, 10000, 40000, 160000)` → `(1000, 5000, 50000, 500000)`
+
+**Why**: Multi-scale RoPE already showed gains (exp80). Widening from 64x to 500x range gives each of 4 heads a much more distinct positional scale: ultra-local (1000), medium-local (5000), medium-range (50000), and near-position-agnostic (500000). 1-line change, zero crash/OOM risk.
+
+**Expected range**: -0.003 to +0.005

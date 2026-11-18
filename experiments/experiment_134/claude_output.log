@@ -1,0 +1,6 @@
+Experiment #134 is ready. Summary:
+
+- **Change**: `EMBEDDING_LR = 0.6` → `EMBEDDING_LR = 0.4`
+- **Why**: The wte embedding LR controls 22% of model parameters and has **never been tuned**. The effective LR (~0.735 after dmodel scaling) is very high for sparse embedding updates. VE embeddings benefited from conservative updates (exp115), suggesting embeddings prefer lower LR.
+- **Risk**: Zero crash risk. Possible neutral or slight regression if embeddings need aggressive updates in ~830 steps.
+- **Files modified**: `train.py` (one constant), `run_logs.md` (appended), `experiments/experiment_134/report.md` (created)

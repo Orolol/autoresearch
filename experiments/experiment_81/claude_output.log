@@ -1,0 +1,14 @@
+Experiment 81 is ready. Here's a summary of what I did:
+
+**Change: Pre-output MLP** — Added a lightweight feedforward layer (512->1024->512 with ReluSquared) between the final transformer block and lm_head.
+
+**What was modified in train.py:**
+1. `GPT.__init__`: Added `output_fc` (512->1024) and `output_proj` (1024->512) linear layers
+2. `GPT.init_weights`: output_fc with uniform init, output_proj with zero init (model starts identical to baseline)
+3. `GPT.forward`: `x = x + output_proj(relu(output_fc(norm(x))).square())` + re-norm before lm_head
+4. `GPT.setup_optimizer`: Output MLP params added to Muon matrix groups
+5. `GPT.num_scaling_params`: Updated to track output_mlp params
+
+**Why:** DEPTH is the most valuable axis (losing 1 layer = +0.033). A full 9th layer costs ~12.5% compute for marginal benefit. This pre-output MLP adds meaningful non-linear depth at only ~3% compute overhead — a "cheap 9th layer" without attention. Zero-init ensures clean start.
+
+**Risks:** Zero crash/OOM risk. Worst case: ~0.001-0.002 regression if the compute overhead outweighs the capacity gain.

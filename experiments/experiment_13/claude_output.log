@@ -1,0 +1,5 @@
+Exp13 est prêt. Changement : `WARMDOWN_RATIO = 0.6 → 0.4` (1 ligne).
+
+**Rationale** : Le modèle passe actuellement 60% du training en warmdown — c'est trop conservateur pour 5 min de training. Avec 0.4, on obtient 60% du temps à full LR (vs 40%), soit ~170 steps supplémentaires à pleine puissance. Le warmdown compressé (40% = ~330 steps) reste suffisant pour converger.
+
+**Risques** : quasi-nuls. Pas de crash, OOM, ni changement architectural. Le pire scénario est une régression de ~0.003 si le warmdown est trop court.

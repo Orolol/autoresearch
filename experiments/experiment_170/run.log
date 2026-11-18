@@ -1,0 +1,11 @@
+Sending to RunPod Flash (RTX_5090)...
+2026-03-17 17:10:48,892 | INFO  | LiveServerless:lfyndmjvwjgw10 | API /run
+2026-03-17 17:10:49,308 | INFO  | LiveServerless:lfyndmjvwjgw10 | Started Job:63c29f77-b5f3-4e12-8cf6-aa79dc86a890-e2
+2026-03-17 17:10:49,347 | INFO  | Job:63c29f77-b5f3-4e12-8cf6-aa79dc86a890-e2 | Status: IN_QUEUE
+2026-03-17 17:10:49,753 | INFO  | Job:63c29f77-b5f3-4e12-8cf6-aa79dc86a890-e2 | .
+2026-03-17 17:10:51,175 | INFO  | Job:63c29f77-b5f3-4e12-8cf6-aa79dc86a890-e2 | ..
+2026-03-17 17:10:55,823 | INFO  | Job:63c29f77-b5f3-4e12-8cf6-aa79dc86a890-e2 | Status: IN_PROGRESS
+2026-03-17 17:10:56,267 | INFO  | Job:63c29f77-b5f3-4e12-8cf6-aa79dc86a890-e2 | .
+2026-03-17 17:10:57,547 | INFO  | Job:63c29f77-b5f3-4e12-8cf6-aa79dc86a890-e2 | ..
+2026-03-17 17:11:02,921 | INFO  | Job:63c29f77-b5f3-4e12-8cf6-aa79dc86a890-e2 | ...
+2026-03-17 17:11:19,122 | INFO  | Job:63c29f77-b5f3-4e12-8cf6-aa79dc86a890-e2 | ....

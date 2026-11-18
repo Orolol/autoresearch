@@ -1,0 +1,9 @@
+Done. Here's the summary:
+
+**Experiment #123: Gradual MLP width ramp**
+
+**Change:** Replaced the 2-step MLP split (`2x if layer < 4 else 4x`) with a smooth linear ramp: `expansion = round(1 + 4 * layer_idx / (n_layer - 1))` producing [1, 2, 2, 3, 3, 4, 4, 5] across 8 layers.
+
+**Why:** Exp122 proved non-uniform MLPs work (-0.00114). This tests whether a steeper, more gradual ramp works even better — giving layer 7 a 5x MLP (vs 4x before) while shrinking layer 0 to 1x (vs 2x). Total compute is identical (avg 3x = 24 total).
+
+**Risk:** Layer 0 at 1x MLP may be a bottleneck. If it regresses, the fallback is a gentler ramp [2,2,2,3,3,4,4,4] with minimum 2x.

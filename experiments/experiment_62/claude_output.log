@@ -1,0 +1,5 @@
+Done. Experiment 62 is ready:
+
+- **Change**: Added `torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)` after gradient accumulation, before `optimizer.step()`
+- **Why**: AdamW params (embeddings, lm_head, scalars) have no gradient normalization — spikes can corrupt their EMA states. Standard practice in all major LLM pipelines. This was HIGH PRIORITY #1 in the notes (exp58 crashed on infra, never tested on GPU).
+- **Risk**: Zero crash/OOM/speed risk. Either a no-op (if norms < 1.0) or positive (catches spikes).

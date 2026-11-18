@@ -1,0 +1,3 @@
+The change is done. One-line modification: `weight_decay=0.0` → `weight_decay=0.002` for the VE optimizer group.
+
+**Summary**: Added mild L2 regularization (WD=0.002) to the Value Embedding parameters. VE is 22% of the model (16.8M params) and the only large parameter block with zero weight decay. This should help regularize rare token VE vectors that receive sparse updates at high LR. The change is ultra-safe (no new code, no crash risk) but likely within noise — the model is near its optimization frontier and remaining gains require either FP8 (more steps) or a fundamentally new attention mechanism (DeltaNet/GLA).

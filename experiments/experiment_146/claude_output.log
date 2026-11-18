@@ -1,0 +1,7 @@
+Done. Experiment 146: **gate_dim=4** (perfectly square Muon matrix for the sparse attention gate).
+
+**Change**: `self.gate_dim = 2 * self.n_head` → `self.gate_dim = self.n_head` in `train.py:77`. Gate weight matrix goes from (4,8) to (4,4).
+
+**Rationale**: Muon's polar decomposition is optimal on square matrices. The 1:1 ratio matched the best config in modded-nanogpt PR#117. This was already tried in exp144 but crashed on infra — never tested on GPU.
+
+**Risk**: Low. Worst case is neutral (gate too sparse to be useful), but zero-init means even a useless gate starts at 1.0 and shouldn't regress.

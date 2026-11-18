@@ -1,0 +1,12 @@
+All changes are consistent. The implementation is clean:
+
+**Summary of changes:**
+1. `Block.__init__`: Added `attn_norm_weight` and `mlp_norm_weight` (nn.Parameter, size n_embd)
+2. `Block.forward`: `norm(x)` → `F.rms_norm(x, ..., weight=self.attn_norm_weight/mlp_norm_weight)`
+3. `GPT.__init__`: Added `final_norm_weight` (nn.Parameter, size n_embd)
+4. `GPT.forward`: Final `norm(x)` → `F.rms_norm(x, ..., weight=self.final_norm_weight)`
+5. `init_weights`: All norm gains initialized to 1.0 (neutral start)
+6. `setup_optimizer`: `final_norm_weight` in its own AdamW group (scalar_lr, betas=(0.96, 0.95)); block norm weights auto-captured with time_mix_params
+7. `num_scaling_params`: Updated to count final_norm_weight
+
+Total: 8,704 new params (0.02%), zero compute overhead, zero crash risk. Model starts identical to current parameterless norm.

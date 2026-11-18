@@ -1,0 +1,1 @@
+Done. **Experiment #125**: `UNEMBEDDING_LR` increased from 0.004 to 0.01 (2.5x). Single-line change in `train.py:501`. The lm_head is 22% of the model and has never had its LR tuned — this is the highest-signal untested lever remaining. Zero crash risk, softcap + z-loss provide safety nets against logit instability.

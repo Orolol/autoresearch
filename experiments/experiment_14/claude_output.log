@@ -1,0 +1,8 @@
+Done. Here's the summary:
+
+**Experiment #14: MLP 3x (hidden dim 1536 → was 2048)**
+
+- **Change**: 2 lines in MLP class — `4 * config.n_embd` → `3 * config.n_embd` for both c_fc and c_proj
+- **Rationale**: The ONLY strategy that has ever beaten baseline is "more optimizer steps." Reducing MLP from 4x to 3x saves ~4.2M params (5.5% of total), making each forward/backward faster → more steps in 5 min. No quality mechanism is removed — just a smaller hidden dimension.
+- **Expected**: If step gain > capacity loss: ~0.001-0.003 improvement. If balanced: neutral. If capacity too small: ~0.002-0.005 regression.
+- **Risk**: Zero crash/OOM risk. Pure dimension change.

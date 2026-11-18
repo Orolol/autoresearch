@@ -1,0 +1,9 @@
+Done. Here's the summary:
+
+**Experiment 18: DEPTH=7 (8→7 layers)**
+- Single line change: `DEPTH = 8` → `DEPTH = 7`
+- Model dim stays 512 (7×64=448, rounded up to nearest 128)
+- Saves ~2.6M matrix params (~12.5% less compute per step)
+- Same MLP 3x, VE-last-only, z-loss, softcap=15, everything else unchanged
+- Follows the winning "less compute → more steps" strategy that gave the best result ever (exp14: -0.008)
+- Risk: if 7 layers is too shallow, mild regression. No crash/OOM risk.

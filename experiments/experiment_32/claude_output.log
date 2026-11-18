@@ -1,0 +1,9 @@
+Everything looks correct. Summary of the change:
+
+**Experiment 32: lm_head Muon retry with conservative LR**
+
+- Moved lm_head (32768x512, 16.8M params) from AdamW (lr=0.0049) to a dedicated Muon group (base lr=0.005, effective lr=0.04 after rectangular scaling)
+- Exp23 had the same idea but crashed (likely infra — 4+ consecutive infra crashes around that time) and used lr=0.04 (effective 0.32 = way too aggressive)
+- NS orthogonalization pushes 32768 output vectors toward isometry in 512-dim space — instant preconditioning vs AdamW's slow second-moment warmup
+- Net ~33MB memory savings (Muon doesn't need exp_avg_sq)
+- ~4 lines changed in `setup_optimizer`

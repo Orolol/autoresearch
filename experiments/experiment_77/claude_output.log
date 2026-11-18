@@ -1,0 +1,8 @@
+Done. Here's the summary:
+
+**Experiment #77: Mid-MLP normalization (NormFormer-style)**
+
+- **Change**: Added `x = norm(x)` (RMSNorm) between ReluSquared and c_proj in the MLP forward pass (line 120 of train.py)
+- **Why**: Follows the winning pattern of gradient flow improvements (softcap 13, z-loss, U-Net skips). ReluSquared produces sparse, potentially large activations that the output projection must handle. Normalizing them stabilizes gradient magnitude through the MLP path.
+- **Risks**: Zero crash/OOM risk. Possible mild regression if raw activation magnitude carries useful signal.
+- **One-line change**, zero extra params, negligible compute cost.

@@ -1,0 +1,5 @@
+Done. Experiment 192: **Extend chunkwise linear attention from layers 2-5 to layers 1-6**, keeping only the VE bookend layers (0 and 7) with full softmax attention.
+
+**The bet:** All recent attempts to improve the linear attention mechanism itself have failed (4 consecutive regressions). Instead of making the mechanism better, use it in more layers. The compute savings from removing 2 expensive O(T^2) softmax layers should yield ~80-100 extra training steps. The cross-chunk recurrent state S gives layers 1 and 6 effective full-context coverage, unlike the block-diagonal SDPA that was tested in exp150.
+
+**Single-line change:** `layer_idx >= 2 and < n-2` → `layer_idx >= 1 and < n-1`.

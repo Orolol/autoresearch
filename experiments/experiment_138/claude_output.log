@@ -1,0 +1,5 @@
+Done. **Experiment 138**: `WARMDOWN_RATIO = 0.7 → 0.8`.
+
+**Rationale**: The warmdown ratio has the strongest monotonic signal in 137 experiments (0.4 → 0.6 → 0.7, each strictly better). Exp137 explicitly recommends 0.8 as the next test. With ~830 steps, this means ~166 at full LR and ~664 in warmdown.
+
+**Risk**: Diminishing returns are likely (the 0.6→0.7 gain was only -0.000127 vs -0.011 for 0.4→0.6). The very short full-LR phase (~166 steps) may hurt sparse embedding convergence. Zero crash risk.

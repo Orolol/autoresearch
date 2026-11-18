@@ -1,0 +1,5 @@
+**CLASSIFICATION: INFRA**
+
+Le crash n'est pas dans le code. Le job RunPod a été démarré, est passé `IN_PROGRESS`, puis le worker est devenu inaccessible (erreur 404 sur l'endpoint `/cancel`, puis `ReadTimeoutError` sur `api.runpod.ai`). Le script d'entraînement n'a jamais produit de sortie GPU.
+
+Aucune modification de code nécessaire — il faut simplement relancer l'expérience.

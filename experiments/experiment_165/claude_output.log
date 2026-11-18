@@ -1,0 +1,1 @@
+Done. Experiment 165: **x0_lambdas init 0.1 → 0.05** — reduces cumulative raw embedding noise in deep layers. Single-line change in `init_weights` (line 234). Analog of skip_lambdas init tuning (exp98, -0.002). Zero crash risk. The training will be launched by `ralph.sh`.

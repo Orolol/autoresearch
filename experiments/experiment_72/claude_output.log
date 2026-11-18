@@ -1,0 +1,11 @@
+Done. Here's a summary of experiment #72:
+
+**Idea**: Enable actual sliding window attention via `flex_attention` for the SDPA path.
+
+**What**: The model was designed with SSSL window pattern (6/8 layers use half-context attention) but SDPA on RTX 5090 ignores window sizes — all layers do full 2048 causal attention. `flex_attention` (PyTorch 2.5+) generates Triton kernels with block-sparse masking that skip masked blocks entirely, enabling real sliding window.
+
+**Why it should work**: The "more training steps" thesis is the strongest lever (MLP 3x gave -0.008). With 6/8 layers skipping ~50% of attention compute, we get ~10-15% overall speedup → more steps. Plus the sliding window inductive bias was part of the intended architecture.
+
+**Changes**: ~25 lines across imports, `CausalSelfAttention`, and `GPT.init_weights`. Graceful fallback if flex_attention fails.
+
+**Risks**: torch.compile compatibility with BlockMask, flex_attention Triton kernels possibly slower per-FLOP than SDPA's optimized backends, sliding window possibly hurting quality.

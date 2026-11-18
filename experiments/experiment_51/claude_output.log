@@ -1,0 +1,3 @@
+Done. Experiment 51 retries **Muon momentum warmup 300→100 steps** (4th attempt — exp38/40/49 all crashed on infra, never tested on GPU).
+
+Single change: `min(step / 300, 1)` → `min(step / 100, 1)` in `get_muon_momentum`. This gives the model full 0.95 Nesterov momentum by step 100 (12% of training) instead of step 300 (36%). The stronger look-ahead should improve gradient quality for 24% more of the training budget, at zero cost. NS orthogonalization + NorMuon ensure stability.

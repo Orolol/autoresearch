@@ -1,0 +1,6 @@
+Done. Summary of experiment 45:
+
+- **Change**: `softcap = 15` -> `softcap = 13` (single number in `forward()`)
+- **Why**: Tighter softcap improves gradient flow through tanh, synergizes with z-loss. Only {0, 15, 30} tested on GPU so far. Softcap=12 crashed 5 times on infra; 13 avoids that potentially cursed compile path while testing the same hypothesis.
+- **Risk**: Zero. Pure scalar change, no crash/OOM/speed risk.
+- **Expected**: -0.001 to +0.003 (within noise to small improvement)

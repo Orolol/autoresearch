@@ -1,0 +1,1 @@
+Done. Experiment 46: **softcap 13 → 11**. Single number change in `forward()`. Continues the winning softcap tightening trend (30 → 15 → 13, each improving). Softcap=11 is near the theoretical minimum useful gap (~10.4) so this tests how far we can push gradient flow improvement before expressiveness bottlenecks. Zero risk of crash/OOM.

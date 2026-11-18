@@ -1,0 +1,113 @@
+Sending to RunPod Flash (RTX_5090)...
+2026-03-11 14:53:10,170 | INFO  | LiveServerless:6vpwrdi9ebthaa | API /run
+2026-03-11 14:53:10,620 | INFO  | LiveServerless:6vpwrdi9ebthaa | Started Job:d9b69936-14f5-4756-bd79-ea78223e5b52-e1
+2026-03-11 14:53:10,712 | INFO  | Job:d9b69936-14f5-4756-bd79-ea78223e5b52-e1 | Status: IN_QUEUE
+2026-03-11 14:53:11,106 | INFO  | Job:d9b69936-14f5-4756-bd79-ea78223e5b52-e1 | .
+2026-03-11 14:53:12,245 | INFO  | Job:d9b69936-14f5-4756-bd79-ea78223e5b52-e1 | ..
+2026-03-11 14:53:17,927 | INFO  | Job:d9b69936-14f5-4756-bd79-ea78223e5b52-e1 | Status: IN_PROGRESS
+2026-03-11 14:53:18,351 | INFO  | Job:d9b69936-14f5-4756-bd79-ea78223e5b52-e1 | .
+2026-03-11 14:53:19,733 | INFO  | Job:d9b69936-14f5-4756-bd79-ea78223e5b52-e1 | ..
+Traceback (most recent call last):
+  File "/home/gmartin/worspace/autoresearch/train_remote.py", line 169, in <module>
+    main()
+  File "/home/gmartin/worspace/autoresearch/train_remote.py", line 165, in main
+    asyncio.run(async_main())
+  File "/usr/lib/python3.10/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/usr/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/home/gmartin/worspace/autoresearch/train_remote.py", line 151, in async_main
+    result = await remote_train({"train_py": train_py, "prepare_py": prepare_py})
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod_flash/client.py", line 290, in wrapper
+    return await stub(
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod_flash/stubs/registry.py", line 54, in stubbed_resource
+    return stub.handle_response(response)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod_flash/stubs/live_serverless.py", line 146, in handle_response
+    raise Exception(f"Remote execution failed: {response.error}")
+Exception: Remote execution failed: HTTPSConnectionPool(host='api.runpod.ai', port=443): Max retries exceeded with url: /v2/6vpwrdi9ebthaa/cancel/d9b69936-14f5-4756-bd79-ea78223e5b52-e1 (Caused by NameResolutionError("HTTPSConnection(host='api.runpod.ai', port=443): Failed to resolve 'api.runpod.ai' ([Errno -3] Temporary failure in name resolution)"))
+Traceback (most recent call last):
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/urllib3/connectionpool.py", line 534, in _make_request
+    response = conn.getresponse()
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/urllib3/connection.py", line 571, in getresponse
+    httplib_response = super().getresponse()
+  File "/usr/lib/python3.10/http/client.py", line 1395, in getresponse
+    response.begin()
+  File "/usr/lib/python3.10/http/client.py", line 323, in begin
+    version, status, reason = self._read_status()
+  File "/usr/lib/python3.10/http/client.py", line 284, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "/usr/lib/python3.10/socket.py", line 705, in readinto
+    return self._sock.recv_into(b)
+  File "/usr/lib/python3.10/ssl.py", line 1303, in recv_into
+    return self.read(nbytes, buffer)
+  File "/usr/lib/python3.10/ssl.py", line 1159, in read
+    return self._sslobj.read(len, buffer)
+TimeoutError: The read operation timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/requests/adapters.py", line 644, in send
+    resp = conn.urlopen(
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/urllib3/util/retry.py", line 490, in increment
+    raise reraise(type(error), error, _stacktrace)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/urllib3/util/util.py", line 39, in reraise
+    raise value
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/urllib3/connectionpool.py", line 536, in _make_request
+    self._raise_timeout(err=e, url=url, timeout_value=read_timeout)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/urllib3/connectionpool.py", line 367, in _raise_timeout
+    raise ReadTimeoutError(
+urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='api.runpod.ai', port=443): Read timed out. (read timeout=10)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod_flash/core/resources/serverless.py", line 970, in run
+    job_status = await asyncio.to_thread(job.status)
+  File "/usr/lib/python3.10/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+  File "/usr/lib/python3.10/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod/endpoint/runner.py", line 135, in status
+    return self._fetch_job()["status"]
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod/endpoint/runner.py", line 122, in _fetch_job
+    job_state = self.rp_client.get(endpoint=status_url)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod/endpoint/runner.py", line 94, in get
+    return self._request("GET", endpoint, timeout=timeout)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod/endpoint/runner.py", line 78, in _request
+    response = self.rp_session.request(
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/requests/adapters.py", line 690, in send
+    raise ReadTimeout(e, request=request)
+requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='api.runpod.ai', port=443): Read timed out. (read timeout=10)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod_flash/stubs/live_serverless.py", line 158, in ExecuteFunction
+    job = await self.server.run(payload)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod_flash/core/resources/serverless.py", line 995, in run
+    await asyncio.to_thread(job.cancel)
+  File "/usr/lib/python3.10/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod/endpoint/runner.py", line 177, in cancel
+    return self.rp_client.post(
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod/endpoint/runner.py", line 90, in post
+    return self._request("POST", endpoint, data, timeout)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod/endpoint/runner.py", line 78, in _request
+    response = self.rp_session.request(
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/requests/adapters.py", line 677, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='api.runpod.ai', port=443): Max retries exceeded with url: /v2/6vpwrdi9ebthaa/cancel/d9b69936-14f5-4756-bd79-ea78223e5b52-e1 (Caused by NameResolutionError("HTTPSConnection(host='api.runpod.ai', port=443): Failed to resolve 'api.runpod.ai' ([Errno -3] Temporary failure in name resolution)"))
+

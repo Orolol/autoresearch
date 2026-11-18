@@ -1,0 +1,6 @@
+Done. **Experiment 38: Muon momentum warmup 300→100 steps.**
+
+- **Change**: Single number in `get_muon_momentum`: `step / 300` → `step / 100`
+- **Rationale**: With ~830 training steps, 300-step warmup wastes 36% of training at suboptimal momentum (0.85→0.95). Reducing to 100 steps means full 0.95 momentum by step 100 (only 12% of training). At step 100, the new schedule has 3.5× stronger Nesterov look-ahead distance (momentum 0.95 vs 0.883).
+- **Risk**: Zero — single scalar change, NS + NorMuon provide stability
+- **Expected**: ~0.001-0.003 improvement if momentum warmup was the bottleneck; neutral if 300 was already fine

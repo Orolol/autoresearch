@@ -1,0 +1,8 @@
+Everything looks correct. Let me do a final review of the changes:
+
+**Experiment 26: EMA of model weights**
+
+- **What**: Maintain an exponential moving average (decay=0.995) of all model parameters during training. Use EMA weights for final evaluation instead of the raw last-step weights.
+- **Why**: All "more steps via less compute" ideas are exhausted. The model is severely undertrained (~830 steps) with ~0.003 variance between identical runs. EMA smooths out SGD noise, capturing the best of the convergence trajectory. Universally proven technique (diffusion, ViT, GANs).
+- **Changes**: 6 lines added — EMA init after compile, EMA update after optimizer step, EMA swap before eval.
+- **Risk**: Minimal. ~220MB extra VRAM, ~1-2ms/step overhead. No architectural changes. Worst case: neutral (warmdown already converges cleanly).

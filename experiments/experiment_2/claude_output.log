@@ -1,0 +1,9 @@
+Changement effectué. Récapitulatif :
+
+**Experiment #2 : softcap 15 → 30**
+- **Une seule ligne modifiée** : `train.py:294` — `softcap = 15` → `softcap = 30`
+- **Hypothèse** : softcap=15 limite trop l'expressivité des logits. 30 donne 2x plus de dynamic range tout en gardant la régularisation (la suppression totale à softcap=∞ avait régressé à 1.097)
+- **Risque** : quasi-nul, pas de changement de mémoire/vitesse/params
+- **Critère de succès** : val_bpb < 1.088 serait une victoire ; < 1.085 serait excellent
+
+Le code est prêt pour `ralph.sh`.

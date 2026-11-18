@@ -1,0 +1,7 @@
+The change is ready. Here's the summary:
+
+**Experiment #178: Sigmoid Attention for Local Layers**
+
+Replaced softmax with sigmoid gating in block-diagonal local attention (layers 2-5). Instead of the winner-take-all softmax where attention weights must sum to 1, sigmoid allows each position to independently decide how much to attend to each key. Normalized by causal position count for stable output magnitude. Global layers (0,1,6,7) keep softmax SDPA unchanged.
+
+This is a genuine attention mechanism change — not on the dead ideas list, zero new parameters, and theoretically well-motivated by recent research. The main risk is regression if sigmoid can't learn selective attention fast enough in ~830 steps.

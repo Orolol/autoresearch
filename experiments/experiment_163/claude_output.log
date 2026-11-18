@@ -1,0 +1,7 @@
+Done. Experiment 163 is ready:
+
+- **Change**: Adaptive x0 injection via sparse per-position gating (64 new params)
+- **Mechanism**: `x0_g = 2*sigmoid(Linear(8→1)(x[:,:,:8]))` modulates x0_lambdas per position
+- **Why**: Reuses the exact sparse gating pattern from the two most recent wins (exp141, exp153), applied to x0 injection which is critical but currently position-blind
+- **Risk**: Low — zero-init starts identical to current best, negligible overhead
+- **Syntax**: Verified OK

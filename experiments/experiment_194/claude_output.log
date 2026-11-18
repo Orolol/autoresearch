@@ -1,0 +1,8 @@
+Done. Here's the summary:
+
+**Experiment #194: chunk_size=256 → 512 for hybrid local attention**
+
+- **What**: Doubled the chunk size in local layers (2-5) from 256 to 512 tokens
+- **Why**: exp193's hybrid softmax intra-chunk directly benefits from larger windows (softmax over 512 vs 256 tokens = sharper attention). Cross-chunk recurrence transitions halved (8→4), reducing information loss. Explicitly listed as untested in priority queue (exp182 INFRA crash).
+- **Risk**: ~2x more intra-chunk attention FLOPs in 4 local layers → may cost 40-80 training steps. Quality vs quantity tradeoff.
+- **Change**: Single line: `self.block_size = 256` → `self.block_size = 512`

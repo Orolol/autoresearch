@@ -1,0 +1,5 @@
+Done. Changes for experiment 8:
+
+- **Single change**: `MATRIX_LR = 0.04` → `MATRIX_LR = 0.06` (+50%)
+- **Rationale**: Exp7 tried this but crashed due to RunPod API timeout (never ran on GPU). The idea is sound — the model is undertrained (~830 steps), we can't get more steps (2^17 failed), so make each step more effective. Muon's gradient normalization means higher LR = bigger steps in optimal direction, with QK-norm + softcap providing stability.
+- **Risk**: Low. Worst case is mild regression from overshooting during warmdown.

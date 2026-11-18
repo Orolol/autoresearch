@@ -1,0 +1,1 @@
+Exp48 prête. Softcap=11 (3ème tentative, exp46/47 crashed infra). Un seul changement : `softcap = 13` → `softcap = 11` dans `forward()`. Continue la direction gagnante de la série softcap : {30 (+0.005), 15 (baseline), 13 (-0.001)}. Si ça marche, on testera softcap=10 ou on combinera avec momentum warmup=100/beta2=0.99.

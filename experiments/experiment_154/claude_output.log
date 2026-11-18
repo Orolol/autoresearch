@@ -1,0 +1,12 @@
+Everything looks correct. The changes are minimal and clean:
+
+1. **`__init__`**: Added `self.key_temp = nn.Linear(self.gate_dim, self.n_head, bias=False)` — same shape as Q-temp
+2. **`forward`**: Extracted `sparse_in`, renamed `temp` to `q_temp`, added `k_temp` computation and K scaling
+3. **`init_weights`**: Added `torch.nn.init.zeros_(block.attn.key_temp.weight)` for neutral start
+
+**Summary of experiment 154**:
+- **Change**: Dynamic key temperature — per-head K scaling from sparse input, complementary to exp153's Q-temp
+- **Why**: Creates rank-1 temperature matrix `t_q[i] * t_k[j]` giving both query-focus and key-prominence control. Q-temp alone scales all keys uniformly per query; K-temp lets each key modulate its own visibility.
+- **New params**: 256 (0.00036% of model), negligible compute
+- **Risk**: Very low — zero-init starts identical to current best. Standard ops, static shapes, torch.compile safe.
+- **Expected range**: -0.003 to +0.003

@@ -1,0 +1,8 @@
+Done. Here's the summary:
+
+**Experiment 16**: `torch.compile(mode="max-autotune")` instead of default mode.
+
+- **What**: Single line change — adds CUDA graphs (eliminate kernel launch overhead) and autotuned Triton kernels (benchmark multiple configurations at compile time)
+- **Why**: Aligns with the dominant "more steps" strategy. Same model, faster execution → more optimizer steps in 5 minutes. Compilation overhead is free (first 10 steps excluded from time budget).
+- **Risk**: Near-zero. No architectural change. Slightly more VRAM for graph capture (~100-200MB). Unlikely compatibility issues with `dynamic=False`.
+- **Expected**: 5-10% throughput boost → ~40-80 extra steps → potential ~0.001-0.004 improvement.

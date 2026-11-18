@@ -1,0 +1,13 @@
+Done. Here's the summary:
+
+**Experiment #31: DEPTH=9 + GQA (n_kv_head=2) + MLP 3x**
+
+**Changes** (4 lines):
+- `DEPTH`: 8 → 9
+- `ASPECT_RATIO`: 64 → 56 (keeps model_dim=512)
+- Added `N_KV_HEAD = 2`
+- `n_kv_head=N_KV_HEAD` in `build_model_config`
+
+**Rationale**: Exactly iso-compute with exp22 (same 2,359,296 params/layer, 21.23M total matrix params). But reallocates compute FROM attention (786K vs exp22's 1.05M) TO MLP (1.57M vs exp22's 1.31M). This preserves the winning MLP 3x configuration while gaining the extra 9th layer via GQA attention savings. GQA was essentially free at 8 layers (+0.0003 in exp4).
+
+**Expected**: If MLP capacity matters more than attention KV diversity (which all evidence suggests), this should beat exp22's 1.080504 and potentially beat the current best of 1.079602.

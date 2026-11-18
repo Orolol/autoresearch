@@ -1,0 +1,18 @@
+2026-03-18 14:05:20,735 | ERROR | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x7a22e0d71d50>
+2026-03-18 14:05:20,736 | ERROR | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x7a22e0eaf280>, 31964.221944165)])']
+connector: <aiohttp.connector.TCPConnector object at 0x7a22e0d71d20>
+Sending to RunPod Flash (RTX_5090)...
+2026-03-18 14:05:21,754 | INFO  | LiveServerless:lfyndmjvwjgw10 | API /run
+2026-03-18 14:05:22,135 | INFO  | LiveServerless:lfyndmjvwjgw10 | Started Job:e753fdf1-dae9-4b04-9b06-9200d0084274-e1
+2026-03-18 14:05:22,169 | INFO  | Job:e753fdf1-dae9-4b04-9b06-9200d0084274-e1 | Status: IN_QUEUE
+2026-03-18 14:05:22,567 | INFO  | Job:e753fdf1-dae9-4b04-9b06-9200d0084274-e1 | .
+2026-03-18 14:05:23,887 | INFO  | Job:e753fdf1-dae9-4b04-9b06-9200d0084274-e1 | ..
+2026-03-18 14:05:28,923 | INFO  | Job:e753fdf1-dae9-4b04-9b06-9200d0084274-e1 | Status: IN_PROGRESS
+2026-03-18 14:05:29,306 | INFO  | Job:e753fdf1-dae9-4b04-9b06-9200d0084274-e1 | .
+2026-03-18 14:05:30,501 | INFO  | Job:e753fdf1-dae9-4b04-9b06-9200d0084274-e1 | ..
+2026-03-18 14:05:35,442 | INFO  | Job:e753fdf1-dae9-4b04-9b06-9200d0084274-e1 | ...
+2026-03-18 14:05:51,419 | INFO  | Job:e753fdf1-dae9-4b04-9b06-9200d0084274-e1 | ....
+2026-03-18 14:06:13,595 | INFO  | Job:e753fdf1-dae9-4b04-9b06-9200d0084274-e1 | .....
+2026-03-18 14:06:31,496 | INFO  | Job:e753fdf1-dae9-4b04-9b06-9200d0084274-e1 | ......

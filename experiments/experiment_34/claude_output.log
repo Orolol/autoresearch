@@ -1,0 +1,7 @@
+Done. Experiment 34: **Label smoothing retry** (alpha=0.1, training only).
+
+**Change**: 1 line added in `forward()` — `smoothing = 0.1 if reduction == 'mean' else 0.0`, passed to `F.cross_entropy(..., label_smoothing=smoothing)`.
+
+**Key improvement over exp33**: eval path gets `smoothing=0.0`, so val_bpb is directly comparable to the best (1.079602). Exp33 applied smoothing unconditionally which would have inflated eval metrics.
+
+**Why it should work**: Softcap=15 clips logits via tanh. Without smoothing, the model wastes gradient signal trying to push logits past the saturation boundary. Smoothing removes this incentive → cleaner gradients through tanh → better convergence per step.

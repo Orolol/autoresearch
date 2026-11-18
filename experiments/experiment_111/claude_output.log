@@ -1,0 +1,10 @@
+Everything looks correct. The changes are:
+
+1. **Line 74**: `self.head_scales = nn.Parameter(torch.ones(self.n_head))` - 4 learnable scalars per layer
+2. **Line 108**: `y = y * self.head_scales[None, None, :, None]` - scale each head's output before c_proj
+3. **Line 201**: `block.attn.head_scales.fill_(1.0)` - proper init after `to_empty()`
+4. **Lines 281-283**: Split transformer.h params into 2D (Muon) and 1D (head_scales)
+5. **Line 290**: Updated assert to include head_scale_params
+6. **Line 302**: New AdamW group for head_scales at lr=0.005
+
+The model starts at exact baseline (scales=1.0). Training is ready to be launched by `ralph.sh`.

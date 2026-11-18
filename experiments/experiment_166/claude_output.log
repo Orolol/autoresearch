@@ -1,0 +1,8 @@
+Done. Here's the summary:
+
+**Experiment 166**: Increase `EMBEDDING_LR` from 0.6 to 0.8.
+
+- **Change**: Single constant change on line 549 of train.py
+- **Why**: Last explicitly listed untested simple idea. Embeddings are 22% of the model. Only 0.4 was tested (neutral). Effective LR goes from 0.73 → 0.98.
+- **Risks**: High chance of neutral result. Zero crash risk.
+- **Note**: After 165 experiments, simple ideas are exhausted. Updated prompt.md to reflect that future gains likely require FP8 (more steps) or DeltaNet/GLA (new attention mechanism) — both multi-experiment efforts.

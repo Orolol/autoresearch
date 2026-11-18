@@ -1,0 +1,11 @@
+Done. Here's a summary of experiment #17:
+
+**Idea**: Retry `torch.compile(mode="max-autotune")` with `cudagraph_mark_step_begin()` fix.
+
+**Changes** (2 lines):
+1. `torch.compile(model, dynamic=False)` → `torch.compile(model, dynamic=False, mode="max-autotune")`
+2. Added `torch.compiler.cudagraph_mark_step_begin()` before each `model(x, y)` in the grad accum loop
+
+**Why**: Exp16 crashed because CUDA graphs overwrote tensor outputs between gradient accumulation steps. The error message explicitly prescribed the fix. CUDA graphs eliminate kernel launch overhead, autotuned Triton kernels find optimal configs for RTX 5090. Zero architectural risk — same model math, only faster execution → more steps in 5 min.
+
+**Expected**: +5-10% throughput → ~0.001-0.004 improvement in val_bpb, or neutral if already compute-bound.

@@ -1,0 +1,9 @@
+Done. Here's the summary:
+
+**Experiment 30: SwiGLU at iso-compute (3rd attempt)**
+
+- **What**: Replace ReluSquared MLP with SwiGLU gating at identical compute/params (1,572,864 params/layer both ways)
+- **Why**: SwiGLU is standard in ALL modern LLMs. Never tested on GPU — exp25/28 both crashed on RunPod infra. Infra now stable (exp29 ran successfully).
+- **Change**: 4 lines in MLP class — `c_fc(512→2048 fused gate+up)`, `c_proj(1024→512 down)`, `silu(gate) * up` instead of `relu(x).square()`
+- **Risk**: Zero — same FLOPs, same params, same memory. Pure architecture swap.
+- **Expected**: improvement of 0.001-0.005 if gating helps, neutral within noise if not

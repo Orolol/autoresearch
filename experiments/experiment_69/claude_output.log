@@ -1,0 +1,8 @@
+Done. Here's the summary:
+
+**Experiment #69**: Reduce `TOTAL_BATCH_SIZE` from 262144 to 196608 (grad_accum 4→3).
+
+- **33% more optimizer steps** with only **15% noisier gradients**
+- Never-tested midpoint between 2^18 (current baseline) and 2^17 (exp6, +0.011 regression at 41% noise)
+- Follows the "more steps" principle that gave the series' biggest win (MLP 3x = -0.008)
+- Single constant change, zero crash/OOM risk

@@ -1,0 +1,7 @@
+Done. Here's a summary of experiment 63:
+
+**Change**: Z-loss coefficient `1e-4` -> `5e-5` (single number, line 306 of train.py)
+
+**Why**: The z-loss coefficient has never been tuned since it was introduced in exp9 with the default PaLM value. With softcap=13 already constraining logits to [-13, 13], z-loss is partially redundant. Halving it preserves stability while freeing gradient bandwidth for the primary cross-entropy objective.
+
+**Risk**: Zero crash/OOM/speed risk. Worst case: mild regression ~0.001-0.003.

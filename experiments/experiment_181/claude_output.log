@@ -1,0 +1,8 @@
+Everything looks good. The implementation is clean, mathematically equivalent to exp179 at initialization, and adds GLA-style content-dependent decay with only 128 new parameters.
+
+**Summary of experiment #181:**
+- **Idea**: GLA-style input-dependent decay — each position computes its own forget rate `gamma_t = sigmoid(decay_rate + decay_proj(x_t))` instead of a fixed per-head `gamma = sigmoid(decay_rate)`
+- **Why it should work**: The GLA paper showed this is the key mechanism that makes gated linear attention outperform RetNet. Content-addressed forgetting lets the model selectively retain important context tokens while rapidly forgetting noise.
+- **Safety**: Zero-init decay_proj means the model starts EXACTLY equivalent to exp179 (best=1.050748). It can only diverge if content-dependent decay improves the loss.
+- **New params**: 128 scalars (4 layers x 4 heads x 8 input dims). Negligible.
+- **Risk**: Low — same code structure, all static shapes, torch.compile friendly.

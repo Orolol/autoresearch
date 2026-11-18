@@ -1,0 +1,9 @@
+Done. Experiment 175 is ready.
+
+**What**: Partitioned Hyperconnections — 2-lane residual stream (retry of exp174 which crashed on INFRA, code never ran).
+
+**How**: Attention reads `norm(lane0)`, MLP reads `norm(lane1)`, both sublayers write to both lanes with learnable per-layer weights. At init (weights=1.0), both lanes are identical = exact baseline equivalence. 32 new scalar params, zero FLOPs increase.
+
+**Why**: modded-nanogpt PR#230 showed -45 steps improvement. Different from parallel attn+MLP (exp60, +0.034) because sublayers have dedicated read lanes instead of sharing input.
+
+**Risks**: Low crash risk (scalar ops, torch.compile compatible). Medium regression risk (lanes may not differentiate in 830 steps). No OOM risk (+128MB).

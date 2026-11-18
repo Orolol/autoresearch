@@ -1,0 +1,9 @@
+The implementation is complete. Here's a summary:
+
+**Experiment 71: U-Net Skip Connections**
+
+**Change**: Added mirror skip connections between early and late transformer layers (0→7, 1→6, 2→5, 3→4) with 4 learnable scalar gates (`skip_lambdas`), initialized to 0.
+
+**Why it might work**: Provides a third information pathway (alongside residual stream and x0 embedding skips) carrying partially-processed features from early layers to late layers. Improves gradient flow through shorter paths and gives late layers multi-scale representations. Zero compute overhead.
+
+**Risk**: Very low — initialized to 0 means the model starts identical to the current best baseline. The optimizer can learn to use the skip connections if they help, or leave them near zero if not.

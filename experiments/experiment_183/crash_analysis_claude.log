@@ -1,0 +1,8 @@
+**Classification: FIX**
+
+**Cause racine:** L'expérience a ajouté des Conv1d (`q_conv`, `k_conv`) dont les poids sont des tenseurs 3D `(512, 1, 4)`. Le filtre `p.ndim >= 2` dans `setup_optimizer` les envoie vers Muon, mais Muon attend des paramètres strictement 2D. Le `second_momentum_buffer` (3D) ne peut pas broadcaster avec `v_mean` (4D), d'où le crash `lerp_` sur les shapes incompatibles.
+
+**Fix appliqué dans `train.py`:**
+- `matrix_params` filtré à `p.ndim == 2` (Muon, comme avant)
+- Nouveau groupe `conv_params` (`p.ndim >= 3`) routé vers AdamW
+- Assertion mise à jour pour compter les conv params

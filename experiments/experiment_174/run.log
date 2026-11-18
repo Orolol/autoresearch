@@ -1,0 +1,28 @@
+Sending to RunPod Flash (RTX_5090)...
+2026-03-18 10:59:12,565 | ERROR | LiveServerless:None failed to deploy: GraphQL errors: endpoint template names must be unique. check that you do not already have an endpoint with a similar template.
+Traceback (most recent call last):
+  File "/home/gmartin/worspace/autoresearch/train_remote.py", line 169, in <module>
+    main()
+  File "/home/gmartin/worspace/autoresearch/train_remote.py", line 165, in main
+    asyncio.run(async_main())
+  File "/usr/lib/python3.10/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/usr/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/home/gmartin/worspace/autoresearch/train_remote.py", line 151, in async_main
+    result = await remote_train({"train_py": train_py, "prepare_py": prepare_py})
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod_flash/client.py", line 285, in wrapper
+    remote_resource = await resource_manager.get_or_deploy_resource(
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod_flash/core/resources/resource_manager.py", line 292, in get_or_deploy_resource
+    deployed_resource = await self._deploy_with_error_context(config)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod_flash/core/resources/resource_manager.py", line 196, in _deploy_with_error_context
+    return await config._do_deploy()
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod_flash/core/resources/serverless.py", line 846, in _do_deploy
+    result = await client.save_endpoint(payload)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod_flash/core/api/runpod.py", line 305, in save_endpoint
+    result = await self._execute_graphql(mutation, variables)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod_flash/core/api/runpod.py", line 200, in _execute_graphql
+    return await self._execute_graphql_once(query, variables)
+  File "/home/gmartin/.cache/uv/environments-v2/train-remote-110badc6ffb5b36c/lib/python3.10/site-packages/runpod_flash/core/api/runpod.py", line 175, in _execute_graphql_once
+    raise _GraphQLErrorResponse(
+runpod_flash.core.api.runpod._GraphQLErrorResponse: GraphQL errors: endpoint template names must be unique. check that you do not already have an endpoint with a similar template.

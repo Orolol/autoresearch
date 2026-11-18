@@ -1,0 +1,7 @@
+Done. Experiment #114 is ready.
+
+**Change**: Widened `resid_lambdas` and `x0_lambdas` from shape `[n_layer]` (8 scalars) to `[n_layer, n_embd]` (8x512 = 4096 params each). This removes the scalar bottleneck in residual stream routing, letting different dimensions have different persistence and x0-injection rates per layer.
+
+**Why it should work**: Same principle as exp112 (current best) which improved VE by widening the gate from 32 dims to full 512. Here we go from 1 dim (scalar) to 512 for residual control. Different residual dimensions may encode different information types that benefit from different layer-wise dynamics.
+
+**Risk profile**: Very safe — exact baseline at step 0, no new code paths, broadcasting handles everything. Worst case is neutral.

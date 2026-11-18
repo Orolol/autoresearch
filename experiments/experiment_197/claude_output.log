@@ -1,0 +1,8 @@
+Done. Here's the summary of Experiment #197:
+
+**Changes:**
+1. **RoPE-free cross-chunk recurrence** — Pre-RoPE normalized Q/K are used for cross-chunk state queries and updates, while intra-chunk softmax keeps RoPE-encoded Q/K. This eliminates positional angle interference in the accumulated state S. Zero new parameters.
+
+2. **Multi-scale decay init** — Per-head initialization [2.0, 3.5, 5.0, 7.0] gives effective contexts of ~8, ~33, ~143, ~1000 tokens. Heads specialize at different temporal scales instead of all starting at ~55 tokens.
+
+**Key differentiation from exp190** (which also touched RoPE + multi-scale decay but regressed +0.003): exp190 removed RoPE from BOTH intra-chunk and cross-chunk. This experiment keeps RoPE for intra-chunk softmax (where relative position is useful) and only removes it from cross-chunk (where it causes interference in the accumulated state).

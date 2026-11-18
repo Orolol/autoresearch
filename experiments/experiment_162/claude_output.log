@@ -1,0 +1,6 @@
+All three references are correct: definition (line 84), forward use (line 157), zero-init (line 258). The implementation is complete.
+
+**Summary of experiment 162:**
+- **Change**: Value centroid injection — compute causal running mean of V via `cumsum/positions`, inject into attention output with a learned per-head gate (zero-init, 256 new params total)
+- **Why**: Local attention layers (2-5) are blind beyond 256 tokens. The centroid provides a cheap global context signal from the full sequence's V content. Same sparse-gating pattern as attn_gate (exp141, -0.002) and attn_temp (exp153, -0.0006)
+- **Risks**: High chance of neutral (bookend layers may already provide enough global context); low crash/OOM risk

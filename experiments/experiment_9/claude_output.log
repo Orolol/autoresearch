@@ -1,0 +1,10 @@
+Done. Here's a summary of experiment 9:
+
+**Change**: Z-loss regularization (3 lines added to `forward()`)
+- `logz = torch.logsumexp(logits, dim=-1)`
+- `z_loss = 1e-4 * logz.square().mean()`
+- `loss = loss + z_loss`
+
+**Why**: Proven by PaLM/ST-MoE. Complementary to softcap — softcap clips logits via tanh(x/15), but tanh saturates near ±15 with vanishing gradients. Z-loss provides smooth gradients pushing logits away from the saturation boundary, improving gradient flow through the final layer. Zero compute overhead.
+
+**Risk**: Very low. Adds ~2% to loss magnitude. Only affects training (eval unchanged). No architecture/speed/memory changes.

@@ -1,0 +1,9 @@
+The change is ready. Here's what exp127 does:
+
+**Experiment #127: Full RWKV-style Q/K/V token shift**
+
+- Extends exp126's winning token shift from K/V-only to all three attention projections (Q/K/V)
+- Adds `time_mix_q` learnable parameter per layer (4,096 new params total, 0.005% of model)
+- Q now gets mixed input: `x_q = x * sigmoid(time_mix_q) + x_prev * (1 - sigmoid(time_mix_q))`
+- Initialized at 0.5 mixing (sigmoid(0)), model can learn to ignore it if harmful
+- Zero compute overhead, zero crash risk

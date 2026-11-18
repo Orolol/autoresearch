@@ -1,0 +1,11 @@
+Done. Here's a summary of experiment #129:
+
+**Change**: More extreme non-uniform MLP widths — 1.5x/4.5x instead of 2x/4x (iso-compute).
+
+- Layers 0-3: 1.5x MLP (hidden=768, was 1024)
+- Layers 4-7: 4.5x MLP (hidden=2304, was 2048)
+- Total params/FLOPs unchanged (4×1.5 + 4×4.5 = 24 = 8×3 average)
+
+**Why**: Direct follow-up on exp122 (-0.001). Late layers receive residual + U-Net skip info and are closest to prediction — they benefit most from wider MLPs. Token shift exploration is exhausted (exp126-128).
+
+**Risks**: 1.5x in early layers may be too narrow (MLP 2.5x uniform was +0.003). Zero crash risk.

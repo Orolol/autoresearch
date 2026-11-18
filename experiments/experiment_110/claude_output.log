@@ -1,0 +1,8 @@
+All 5 edits are in place and verified. The code is syntactically correct.
+
+**Summary of changes:**
+1. **`schedule_free_adamw_step`** replaces `adamw_step_fused` — maintains z (gradient trajectory), x (Polyak average), sets p to interpolation y = (1-β₁)z + β₁x
+2. **State init** adds `z` and `x` clones alongside existing `exp_avg`/`exp_avg_sq`
+3. **`eval_mode()`/`train_mode()`** on the optimizer to switch between training (y) and evaluation (x) parameters
+4. **Constant LR for AdamW groups** — no warmdown; Muon keeps its linear warmdown
+5. **`optimizer.eval_mode()`** called before final evaluation

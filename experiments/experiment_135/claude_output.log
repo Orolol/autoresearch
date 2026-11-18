@@ -1,0 +1,9 @@
+Done. Here's a summary of experiment #135:
+
+**Idea**: Intermediate multi-scale RoPE range (1500, 8000, 60000, 300000) — 200x span vs current 64x.
+
+**Change**: One constant in `train.py` line 512: `ROPE_BASES = (2500, 10000, 40000, 160000)` -> `ROPE_BASES = (1500, 8000, 60000, 300000)`
+
+**Rationale**: Explicitly requested in prompt.md piste #4 as the final test before declaring RoPE range tuning dead. The wide range (exp109, 500x) was neutral. This intermediate 200x range is the gap. All recent architectural experiments (130-134) were within noise — this tests a different axis entirely (positional encoding).
+
+**Risks**: Likely neutral (high probability). Low regression risk. Zero crash risk.

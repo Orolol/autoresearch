@@ -1,0 +1,8 @@
+The change is implemented. Here's the summary:
+
+**Experiment 70: Decouple AdamW/Muon warmdown schedules**
+
+- **Change**: AdamW groups (embeddings, lm_head, VE, scalars — 66% of params) now keep constant LR throughout training. Only Muon groups (matrix params) follow the warmdown schedule.
+- **Why**: With 830 steps and 60% warmdown, embeddings only get ~330 steps at full LR. AdamW's adaptive step sizes already self-regulate, so external warmdown is redundant. Muon's constant-magnitude NS updates genuinely need warmdown.
+- **Risk**: Zero crash/OOM. Worst case: mild regression ~0.001-0.003.
+- **Code**: 3-line change in the schedule loop (lines 586-591 of train.py).

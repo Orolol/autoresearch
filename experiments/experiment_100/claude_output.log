@@ -1,0 +1,13 @@
+Done. Here's the summary:
+
+**Experiment 100: Sandwich norm (post-sublayer RMSNorm)**
+
+**Change:** 2 lines in `Block.forward` — wrap attention and MLP outputs in `norm()` before residual add:
+```python
+x = x + norm(self.attn(norm(x), ve, cos_sin, window_size))
+x = x + norm(self.mlp(norm(x)))
+```
+
+**Why:** Normalizes each sublayer's contribution to O(1) scale, preventing residual stream magnitude from growing ~O(sqrt(2*n_layer)) across layers. This is a proven technique from PaLM/CogView, and is fundamentally different from mid-MLP norm (exp79, dead) which was *inside* the MLP.
+
+**Risks:** Low. Zero new params, zero compute overhead (2 fast RMSNorm calls/layer), torch.compile safe, same init behavior (norm(0)=0 with c_proj zero-init). Gradient amplification at near-zero values is neutralized by Muon's scale-invariant updates. Expected: -0.003 to +0.005.

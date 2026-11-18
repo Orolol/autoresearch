@@ -1,0 +1,7 @@
+Done. Here's the summary:
+
+**Experiment 5: WEIGHT_DECAY=0.0**
+- **Change**: Single line — `WEIGHT_DECAY = 0.2` → `WEIGHT_DECAY = 0.0`
+- **Hypothesis**: With only ~830 optimizer steps in 5 minutes, the model is severely undertrained. Even mild cautious weight decay slows the effective learning rate during the critical first 40% of training. Removing it lets Muon take larger steps.
+- **Risk**: Very low. Softcap=15 and QK-norm already provide implicit regularization. Worst case is neutral.
+- **Key note**: GQA (exp4) was essentially a tie at 1.088248 (+0.000241), suggesting the model is robust to mild parameter changes. Updated the notes to reflect this — MQA (n_kv_head=1) is now a viable future experiment.

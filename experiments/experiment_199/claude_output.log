@@ -1,0 +1,9 @@
+All done. Here's a summary of experiment 199:
+
+**Experiment 199: Pathway-specific cross-chunk gating**
+
+**Change**: Added a learned `cross_gate` module (Linear(8→4), input-dependent, per-head) to local attention layers (2-5). The hybrid attention output changes from `(intra + cross) * attn_gate` to `(intra + cross_gate * cross) * attn_gate`. This gives the model per-position control over how much to trust the cross-chunk recurrent state vs intra-chunk softmax attention.
+
+**Motivation**: After 8 consecutive failures trying to improve the chunk attention mechanism itself, this changes how the two pathways are *combined* rather than modifying either pathway. The model currently has no way to suppress stale recurrent state (e.g., at document boundaries) without also suppressing local attention.
+
+**Risk profile**: Very low crash risk (standard Linear, compile-friendly). High probability of being neutral (128 new params may not learn enough in 830 steps). Near-zero regression risk (neutral init).

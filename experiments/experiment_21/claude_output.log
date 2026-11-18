@@ -1,0 +1,7 @@
+Done. Here's the summary:
+
+**Experiment 21: `max-autotune-no-cudagraphs`**
+
+- **Change:** Single line — `torch.compile(model, dynamic=False, mode="max-autotune-no-cudagraphs")`
+- **Why:** Exp16/17 crashed because `max-autotune` enables CUDA graphs, incompatible with gradient accumulation. This mode gets the autotuned Triton kernels (benchmarks multiple tile sizes per matmul shape) WITHOUT CUDA graphs. Could give 3-7% throughput boost for free.
+- **Risk:** Near zero — no CUDA graphs, no architectural change, same model math. Worst case: neutral result if default heuristics are already optimal.

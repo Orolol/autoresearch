@@ -1,0 +1,1 @@
+Done. Experiment #49 tests **Muon momentum warmup 300→100 steps** — a single number change in `get_muon_momentum` (line 555). This reduces the fraction of training at suboptimal Nesterov momentum from 36% to 12%. The change has been attempted twice before (exp38/40) but both crashed on RunPod infra, never testing on GPU. Infra is now stable (exp48 ran successfully).

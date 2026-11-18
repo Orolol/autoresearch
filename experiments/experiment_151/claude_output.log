@@ -1,0 +1,7 @@
+Done. Experiment #151: **block_size=128** for local attention in middle layers (2-5).
+
+**Change**: One constant: `self.block_size = 256` → `self.block_size = 128` (line 85).
+
+**Rationale**: Halves local attention compute for 4 middle layers → more training steps in 5 minutes. Same "more steps" lever as MLP 3x (biggest historical win). Documented next step after layer selection was confirmed done (exp150).
+
+**Risk**: Medium — 128 tokens is narrow, harder boundaries. But token shift, full-attention bookend layers, and U-Net skips mitigate. Zero crash risk.

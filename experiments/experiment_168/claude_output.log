@@ -1,0 +1,8 @@
+Done. Here's the summary:
+
+**Experiment #168: WEIGHT_DECAY=0.1** (was 0.2)
+
+- **Change**: Single line — `WEIGHT_DECAY = 0.2` → `WEIGHT_DECAY = 0.1`
+- **Why**: WD=0.2 was never AB-tested against intermediate values. Only WD=0.0 was tested (+0.004, clearly worse). With ~830 steps, less regularization could help parameters explore faster. Explicitly listed as priority #3 in the queue.
+- **Risks**: High chance of neutral (within noise), near-zero crash risk
+- **Next**: If neutral → test WD=0.3 to fully map the WD curve. If both neutral → WD axis exhausted, only FP8/DeltaNet remain.

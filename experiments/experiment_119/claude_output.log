@@ -1,0 +1,5 @@
+Done. Experiment 119 is ready:
+
+- **Change**: VE weight decay 0.002 -> 0.005 (line 292 of train.py)
+- **Why**: Exp115 proved VE WD helps (-0.00088). Testing if the optimum is above 0.002.
+- **Risk**: Zero crash/OOM risk. Worst case: mild regression if 0.005 over-regularizes rare tokens.

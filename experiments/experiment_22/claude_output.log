@@ -1,0 +1,10 @@
+All done. Here's a summary of experiment #22:
+
+**Iso-compute depth-for-width swap: DEPTH=9 + MLP 2.5x + ASPECT_RATIO=56**
+
+3 changes:
+- `DEPTH = 8` → `9` (one extra transformer layer)
+- `ASPECT_RATIO = 64` → `56` (keeps dim at 512: 9×56=504→512)
+- MLP `3 * n_embd` → `int(2.5 * n_embd)` (1536→1280 hidden)
+
+**Rationale**: Matrix params go from 20.97M → 21.23M (+1.25%), so step count barely changes. We gain 1 layer (depth 7→8 was worth +0.033) at the cost of narrower MLP (3x→2.5x costs only +0.003). The depth benefit should dominate. Expected improvement: +0.002-0.007 val_bpb.

@@ -1,0 +1,9 @@
+Done. Experiment 200 is ready.
+
+**Change**: One line in `train.py:88` — local/global attention pattern changed from contiguous `[G,G,L,L,L,L,G,G]` to interleaved `[G,L,G,L,L,G,L,G]`.
+
+**Why it could work**: 4 consecutive local layers create a "global context desert" where full-sequence information degrades through recurrence decay. Interleaving global layers at positions 2 and 5 refreshes full-sequence attention every 2 layers instead of letting it degrade for 4.
+
+**Why it might not**: If the cross-chunk recurrence already provides adequate long-range context, the global refresh is redundant.
+
+Zero new params, zero compute change, zero crash risk. The training will be launched automatically by ralph.sh.

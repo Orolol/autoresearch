@@ -1,0 +1,9 @@
+Everything looks correct. Here's a summary of experiment 158:
+
+**Experiment #158: Cross-layer MLP residual connection**
+
+- **Change**: Each layer's MLP output feeds directly into the next layer's MLP input via a learned per-layer scalar (mlp_skip_lambdas), bypassing the residual stream's dilution through attention, normalization, x0 mixing, and U-Net skips.
+- **Why**: Creates a new "MLP stream" information pathway. Especially useful with non-uniform MLPs (1.5x→4.5x) — narrow early MLPs can prepare features that wide late MLPs build upon directly. Same pattern as successful skip_lambdas (exp98, -0.002).
+- **New params**: 8 scalars (negligible). No extra compute.
+- **Init**: 0.05 (but multiplied by ~0 MLP output at start due to c_proj zero-init → safe).
+- **Risk**: Low. Neutral at worst, crash impossible.

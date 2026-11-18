@@ -1,0 +1,14 @@
+Done. Here's a summary of experiment 12:
+
+**MTP (Multi-Token Prediction) retry** — exp10 crashed due to a code bug, never actually tested on GPU.
+
+**Changes:**
+- Added `mtp_proj` (512x512 linear, 262K params = 0.3% of total)
+- During training: `mtp_logits = lm_head(mtp_proj(x[:, :-1]))` predicts token i+2 from position i
+- Auxiliary loss: `0.1 * CE(mtp_logits, targets[:, 1:])` added to main loss
+- Same softcap=15 applied to MTP logits
+- Added to Muon optimizer, proper init, correct param counting
+
+**Key fixes vs exp10:** cleaner module placement, proper optimizer inclusion, correct param counting, explicit `.contiguous()` on targets.
+
+**Expected:** if MTP signal compensates for ~10-15% fewer steps → improvement of 0.001-0.005. If overhead dominates → regression of 0.002-0.005.

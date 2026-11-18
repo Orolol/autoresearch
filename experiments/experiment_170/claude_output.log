@@ -1,0 +1,13 @@
+Done. Here's a summary of experiment #170 (attempt 3):
+
+**Idea**: FP8 MLP-only matmuls with `@torch.compiler.disable` wrapper to bypass torch.compile graph tracing — the root cause of all 3 previous FP8 crashes.
+
+**What changed**:
+- Added `_FP8LinearOp` autograd Function with `setup_context` pattern: FP8 forward (dynamic per-tensor absmax scaling + `torch._scaled_mm`), BF16 backward
+- Wrapped in `@torch.compiler.disable` to create graph breaks, completely isolating FP8 from torch.compile
+- MLP.forward uses `fp8_linear(x, self.c_fc.weight)` instead of `self.c_fc(x)` (same for c_proj)
+- 16 FP8 matmuls per forward pass, attention + lm_head stay BF16
+
+**Why it should work this time**: Previous crashes were all torch.compile tracing issues. `@torch.compiler.disable` means compile never sees the FP8 code. Graph break overhead is ~1% (16 breaks x 50us vs 360ms/step).
+
+**Expected**: ~1.15x throughput → ~960 steps → -0.002 to -0.004 val_bpb.

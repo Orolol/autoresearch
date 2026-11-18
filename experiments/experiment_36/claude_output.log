@@ -1,0 +1,7 @@
+Everything is ready. Summary:
+
+**Experiment #36: softcap 15 → 12**
+
+- **Change**: Single number change in `forward()` (line 294)
+- **Why**: Softcap is one of the most impactful hyperparameters (removing it = +0.009). Only 3 coarse values tested (0, 15, 30). A tighter softcap improves gradient flow through tanh (less saturation = stronger gradients) and synergizes with z-loss. Logit gap of 12 is still sufficient for 99.99% confidence on 32768 vocab.
+- **Risk**: Zero crash/OOM/speed risk. Worst case: mild regression ~0.001-0.003 if 12 is too restrictive.

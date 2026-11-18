@@ -1,0 +1,6 @@
+Done. Experiment #104 is ready:
+
+- **Change**: Sandwich norm — `x = x + norm(attn(norm(x)))` and `x = x + norm(mlp(norm(x)))` in `Block.forward` (line 132-133)
+- **Why**: Normalizes sublayer contributions to O(1) scale, preventing residual stream growth across 8 layers. Proven in PaLM/CogView. Different from dead mid-MLP norm (exp79) which was inside the MLP.
+- **Risk**: Very low — 2-line change, zero new params. 4 prior attempts all crashed on infra, code was never tested on GPU.
+- **Syntax**: Verified OK

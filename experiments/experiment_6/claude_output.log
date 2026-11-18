@@ -1,0 +1,7 @@
+Done. Experiment 6 is ready:
+
+- **Change**: `TOTAL_BATCH_SIZE = 2**18` → `2**17` (131K tokens/step, grad_accum=2)
+- **Hypothesis**: Doubling optimizer steps (~1660 vs ~830) improves convergence since "more steps" is the only strategy that has ever beaten baseline
+- **Risk**: Noisier gradients from smaller batches. No OOM/crash risk.
+
+The training will be launched automatically by `ralph.sh`.

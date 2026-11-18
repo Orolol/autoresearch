@@ -1,0 +1,5 @@
+**Classification: FIX**
+
+**Root cause:** The new state-augmented attention code (`torch.cat` of memory + real tokens, then `masked_fill` on the concatenated mask) triggers a sympy bug inside `torch.compile`'s Inductor backend — it produces an imaginary number expression `-(I)` that can't be compared during loop stride simplification.
+
+**Fix applied:** Extracted the augmented chunk attention loop into `_augmented_chunk_attn()` decorated with `@torch.compiler.disable`. This skips Inductor compilation for only the problematic local attention path (4 of 8 layers) while everything else stays compiled. The experimental idea is preserved exactly.

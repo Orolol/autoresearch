@@ -1,0 +1,11 @@
+All three edit sites look correct. The code is syntactically valid. The implementation:
+
+1. **`__init__`** (lines 89-96): Adds `state_proj`, `state_decay`, `state_gate` for local layers only
+2. **`forward`** (lines 139-159): After block-diagonal SDPA, projects Q/K to d=16, loops over 8 blocks with decaying state, gates the cross-block output
+3. **`init_weights`** (lines 278-283): Zero-init for gate/decay (neutral start), uniform for projection
+
+**Summary of experiment 177:**
+- **Idea**: Low-rank cross-block recurrent state (d_state=16) with learnable decay and zero-init gate for local attention layers (2-5)
+- **Why it's different from exp152 (+0.006)**: 64x smaller state, forgetting mechanism, neutral init
+- **Cost**: ~8.2K new params, ~1.7% compute overhead
+- **Risk profile**: Neutral start (zero-init gate), may regress if cross-block info is truly unhelpful, low crash risk (fixed loop, standard ops)

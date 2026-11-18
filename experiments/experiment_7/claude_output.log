@@ -1,0 +1,5 @@
+Changement effectué : **MATRIX_LR = 0.04 → 0.06** (+50%).
+
+**Raisonnement** : Le modèle est sous-entraîné (~830 steps). On ne peut pas avoir plus de steps (2^17 a échoué). La solution : rendre chaque step plus agressive. Muon normalise la direction du gradient via Newton-Schulz — le LR ne contrôle que l'amplitude. QK-norm + softcap=15 empêchent toute instabilité.
+
+**Risque** : Faible. Si 0.06 est trop haut, on verra une régression de ~0.005-0.010 (oscillation pendant le warmdown). Aucun risque de crash ou OOM.

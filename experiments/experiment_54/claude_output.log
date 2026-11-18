@@ -1,0 +1,11 @@
+Done. Here's a summary of experiment #54:
+
+**Change:** Multi-Query Attention (MQA) with `n_kv_head=1` instead of 4.
+
+**Rationale:**
+- GQA (n_kv_head=2) was essentially tied with baseline in exp4 (+0.000241), proving the model doesn't need full MHA
+- MQA saves ~15.7M params (~21%): smaller K/V projections + smaller VE embedding
+- Faster optimizer steps (smaller Muon shape groups) and potentially more training steps in 5 minutes
+- This was explicitly listed as an untested promising direction in the notes
+
+**Risk:** Low. All code paths already handle `n_kv_head < n_head` via `repeat_interleave`. Worst case is a mild regression (~0.001-0.003) if the single KV head loses too much capacity.

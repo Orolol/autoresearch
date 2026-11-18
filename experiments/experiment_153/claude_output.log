@@ -1,0 +1,16 @@
+Everything is in place. Here's a summary of experiment #153:
+
+**Idea**: Dynamic attention temperature — input-dependent per-head Q scaling after QK-norm.
+
+**What changed**:
+- Added `attn_temp = Linear(8→4, no bias)` per layer (256 total new params, ~0%)
+- After QK-norm, compute `temp = 2*sigmoid(attn_temp(x[:,:,:8]))` and scale Q by it
+- Zero-init → temp=1.0 at start (identical to current behavior)
+
+**Why it could work**:
+- QK-norm removes all magnitude info, fixing attention sharpness uniformly. Dynamic temp restores per-token control.
+- Different from dead qk_scales (exp67/68): **input-dependent** vs static per-head scalar.
+- Same sparse input pattern as the winning attention gate (exp141, -0.002).
+- Orthogonal to attention gate: gate = output magnitude, temp = distribution shape.
+
+**Risks**: Very low. Zero-init guarantees neutral start. Standard ops, static shapes, torch.compile compatible. Expected range: -0.003 to +0.003.

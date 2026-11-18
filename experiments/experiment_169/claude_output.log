@@ -1,0 +1,14 @@
+Everything looks correct. Here's a summary of experiment #169:
+
+**Experiment #169: FP8 MLP-only matmuls**
+
+**What**: Replace MLP's two `nn.Linear` forward calls with FP8 matmuls via `torch._scaled_mm`, targeting Blackwell's FP8 tensor cores (2x BF16 throughput).
+
+**Why**: Priority #1 from the queue. MLP is ~60% of compute. If MLP gets ~2x speedup → ~1.3x overall throughput → ~1080 steps instead of ~830. "More steps" has been the most consistent source of improvement (MLP 3x: -0.008, local attention: -0.0015).
+
+**Key differences from exp121** (which crashed):
+- MLP-only (2 calls/block) instead of all linears (6 calls/block)
+- `@torch.compiler.allow_in_graph` to avoid torch.compile tracing issues
+- Cleaner implementation with proper per-tensor dynamic scaling
+
+**Risks**: Medium-high crash probability (same `_scaled_mm` + custom autograd pattern). If it crashes, the report documents 4 fallback strategies for the next attempt.

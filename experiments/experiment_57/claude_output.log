@@ -1,0 +1,7 @@
+Done. Here's a summary of experiment 57:
+
+**Change**: Muon beta2 `0.95` → `0.99` (line 273 in `setup_optimizer`)
+
+**Why**: NorMuon's second momentum buffer tracks per-row gradient variance. At beta2=0.95, the effective averaging window is ~20 steps (noisy). At 0.99, it's ~100 steps (smoother). Norm preservation means only the per-row budget distribution changes, not total step magnitude. This is analogous to Adam's default beta2=0.999. Attempted 4 times previously (exp41/42/50/56) but always crashed on infra — never tested on GPU.
+
+**Risk**: Zero. Single number change. No crash/OOM/speed risk.

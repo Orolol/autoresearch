@@ -1,0 +1,6 @@
+Done. Experiment #144 is ready:
+
+- **Change**: `gate_dim = 2 * n_head` → `gate_dim = n_head` (line 77 of train.py)
+- **Effect**: Sparse attention gate matrix goes from (4, 8) to (4, 4) — perfectly square for Muon
+- **Rationale**: Muon's polar decomposition is optimal on square matrices; modded-nanogpt showed smaller gate_dim can outperform larger ones
+- **Risk**: Low — 1-constant change, zero crash risk, worst case neutral

@@ -1,0 +1,9 @@
+Done. Here's the summary:
+
+**Experiment #113: Key Embedding (KE)**
+
+**Change**: Extend Value Embedding to also contribute to Keys via a separate learned `ke_gate`. The same shared VE embedding (first+last layer) provides token identity to both V and K, with independent gates controlling the mixing per head. KE is added before RoPE and QK-norm.
+
+**Why**: VE is the most productive improvement axis (bookend -0.004, skip_lambdas -0.002, wider gate -0.000167). Keys determine attention patterns — adding token identity to keys lets the model attend based on what a token IS (identity), not just its learned key representation. Only 4096 new params, zero-init for exact baseline at step 0.
+
+**Risks**: c_k might already encode sufficient token info (ke_gate stays neutral = no change). Could make attention too identity-focused. Expected range: -0.004 to +0.003.

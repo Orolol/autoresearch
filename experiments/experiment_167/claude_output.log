@@ -1,0 +1,11 @@
+Experiment #167 is ready. Here's the summary:
+
+**Experiment #167: Learnable softcap**
+
+**Change:** Replace the fixed `softcap=13` constant with a learnable parameter `softcap = F.softplus(raw) + 1.0`, initialized to 13.0 (neutral). The model can now find the exact continuous optimum via gradient descent.
+
+**Why:** Softcap was hand-tuned at only 3 integer values (11, 13, 15) with clear sensitivity (±0.001). The true optimum may be non-integer. This converts a fixed hyperparameter into a learned component — 1 new scalar parameter, negligible compute.
+
+**Risks:** Very low. Neutral init (exactly 13.0), softplus+1 ensures cap >= 1.0 always, moderate LR (0.05) prevents large drift. Most likely outcome: cap stays near 13, result is neutral.
+
+**Files modified:** `train.py` (5 locations: init, init_weights, forward, param counting, optimizer setup), `run_logs.md`, `experiments/experiment_167/report.md`, `prompt.md`.

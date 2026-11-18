@@ -1,0 +1,3 @@
+The file already exists with the correct analysis. The classification is already **INFRA** — which is correct. The error is `endpoint template names must be unique` from RunPod's GraphQL API. The training code never ran.
+
+No code changes needed. Just retry after cleaning up the duplicate RunPod endpoint.

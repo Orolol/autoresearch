@@ -1,0 +1,9 @@
+Everything looks correct. The changes are minimal and clean:
+
+1. **Block.__init__** (line 129): Added `self.block_gate = nn.Linear(config.n_embd, 1, bias=False)`
+2. **Block.forward** (lines 132-135): Gate computed from `norm(x)`, scales both attn and MLP outputs. `norm(x)` is reused as attention input.
+3. **init_weights** (line 201): Zero-init for `block_gate.weight` → `2*sigmoid(0) = 1.0` = exact baseline at step 0.
+
+**Total new params**: 8 x (1, 512) = 4096. Grouped by Muon as shape (1, 512). On this degenerate shape, Newton-Schulz reduces to row normalization, and LR = 0.04 (no aspect ratio scaling since 1 < 512).
+
+**No crash risk**: static shapes, no dynamic routing, no new dependencies. **No OOM risk**: 4096 params = 8KB. **No regression at step 0**: exact baseline behavior.

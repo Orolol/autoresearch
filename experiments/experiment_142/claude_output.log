@@ -1,0 +1,13 @@
+All done. Here's a summary of experiment #142:
+
+**Idea**: Sparse MLP gate — extend exp141's successful sparse attention gate to MLP output. Split MLP output into 4 groups of 128 dims, gate each group using the first 8 input dims. Weight shape (4, 8) identical to attention gate — near-square for Muon.
+
+**Why it should work**: Exp141 (sparse attention gate) was the biggest improvement in 40+ experiments (-0.002318). The MLP gate uses the same proven architecture and matrix shape. Modded-nanogpt PR#117 explored both attention and MLP gating for their world record.
+
+**Changes**: 
+- Added `mlp_gate` Linear(8, 4) to each Block
+- Gate applied per-group on MLP output after reshaping to (B, T, 4, 128)
+- Zero-init for neutral start (2*sigmoid(0) = 1.0)
+- 256 extra params total (negligible)
+
+**Risks**: Low. Static shapes, compile-compatible, zero-init neutral. Main risk is being neutral (MLP groups lack the semantic distinctness of attention heads).

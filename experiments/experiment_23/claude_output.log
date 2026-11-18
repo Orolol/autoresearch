@@ -1,0 +1,12 @@
+Done. Here's the summary of experiment #23:
+
+**Idea**: Switch lm_head from AdamW to Muon optimizer.
+
+**Key points**:
+- The lm_head (32768x512, 16.8M params) is the single largest matrix — 44% of all matrix FLOPs
+- Currently uses conservative AdamW (LR=0.004). Switching to Muon gives Newton-Schulz orthogonalization which pushes the 32768 output vectors toward orthogonality in 512-dim space
+- NS compute is cheap for this shape (512x512 matmuls in the tall-matrix branch)
+- Effective LR after Muon's rectangular scaling = 0.32, but NorMuon's second momentum self-corrects step size. Softcap + z-loss provide safety bounds
+- Also adds cautious weight decay to lm_head (was 0.0)
+
+**Change**: 3 lines in `setup_optimizer` — moved lm_head params into the Muon matrix_params list, removed its AdamW group, updated assertion.

@@ -1,0 +1,6 @@
+Experiment 173 is ready. Changes:
+
+- **train.py**: `WEIGHT_DECAY = 0.2` → `WEIGHT_DECAY = 0.3` (line 553, single constant change)
+- **Rationale**: WD curve is monotonically improving (0.0 → 0.1 → 0.2). Testing 0.3 determines if the trend continues or 0.2 is the peak. Cautious masking makes 0.3 less aggressive than it sounds.
+- **Risk**: Zero crash risk, medium chance of regression or neutral result
+- **Updated prompt.md**: Marked LR floor axis as closed, moved WD=0.3 to active, promoted DeltaNet/GLA and Partitioned Hyperconnections up the queue

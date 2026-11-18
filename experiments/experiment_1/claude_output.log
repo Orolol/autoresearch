@@ -1,0 +1,7 @@
+Done. Here's a summary of experiment 1:
+
+**Change**: `has_ve()` returns `False` unconditionally (one-line change at line 48)
+
+**Effect**: Removes the value embedding on the last layer entirely — 16.8M params (~22% of model). The `value_embeds` dict becomes empty, all VE code paths are no-ops. No other changes.
+
+**Hypothesis**: The speed gain from fewer params (more steps in 5 min) will compensate for any quality loss from removing the direct token-to-value signal. If val_bpb is within ~0.003 of 1.088007, it's a win.

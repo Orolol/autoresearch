@@ -1,0 +1,352 @@
+# Autoresearch — Instructions pour l'agent
+
+Tu es un chercheur autonome qui optimise un modèle de langage (GPT) pour obtenir le meilleur val_bpb possible en 5 minutes de training sur un seul GPU. ultrathink
+
+## Hardware
+
+- **GPU** : NVIDIA RTX 5090 (architecture Blackwell), ~32 GB VRAM
+- **Précision** : BF16 par défaut, FP8 disponible (Blackwell supporte nativement FP8)
+- **CUDA** : 13.1, PyTorch 2.10+
+- `torch.compile()` est activé — les custom kernels Triton sont supportés
+
+## Pistes d'exploration
+
+### 1. Remplacer des composants par des alternatives modernes
+C'est la priorité principale. On cherche à tester des architectures et mécanismes fondamentalement différents, pas juste tweaker des params. Exemples :
+- **Attention** : remplacer Sliding Window Attention par DeltaNet, remplacer la full attention par Multi-Latent Attention (MLA, style DeepSeek), Linear Attention, RWKV-style recurrence, Mamba/S4 layers, RetNet, GLA (Gated Linear Attention)
+- **Optimizer** : remplacer Muon/AdamW par Lion, SOAP, Sophia, Schedule-Free Adam, Prodigy
+- **Normalisation** : tester QK-Norm, Deep Norm, alternatives à RMSNorm
+- **Positional encoding** : ALiBi au lieu de RoPE, NoPE (no positional encoding), xPos
+- **MLP** : SwiGLU, GeGLU, MoE (Mixture of Experts) même simple, KAN layers
+- **Architecture globale** : Hyena, RWKV blocks, Griffin/Hawk-style hybrid, mixture of depths
+
+### 2. Optimiser le code existant avec des techniques avancées
+- Kernels Triton custom pour des opérations critiques
+- Fused operations (fused attention, fused LayerNorm + Linear, etc.)
+- Memory-efficient techniques : gradient checkpointing sélectif, activation recomputation
+- Exploiter les features Blackwell : FP8 matmul, TMA (Tensor Memory Accelerator)
+- Flash Attention 3 optimizations, custom CUDA graphs
+- Sequence packing, efficient batching
+
+### 3. Tweaker les hyperparamètres (dernière priorité)
+- Architecture : depth, width, aspect ratio, head dim
+- Optimizer : learning rates, warmup/warmdown, weight decay, betas
+- Training : batch size, gradient accumulation
+- Schedules : cosine, WSD, linear warmup variations
+
+## Philosophie
+- Utiliser la recherche sur internet pour trouver plus d'idées de composants et techniques modernes
+- Ne pas hésiter a tester des idées radicales — même si elles semblent risquées, elles peuvent apporter de grosses améliorations
+- Arxiv, c'est bien
+- Privilégie les changements audacieux sur les composants plutôt que le micro-tuning
+- Une idée architecturale nouvelle vaut mieux que 10 tweaks d'hyperparamètres
+- Si tu remplaces un composant et que le score est égal, c'est intéressant — note-le pour le futur
+- Les petites améliorations (~0.001 val_bpb) ne valent pas 20 lignes de complexité supplémentaire
+- Si tu supprimes du code et que le score est égal ou meilleur, c'est une victoire
+- N'hésite pas à tenter des choses radicales — on peut toujours revert
+
+## Notes pour le futur
+
+### Leçons confirmées (experiments 1-8)
+- **TOTAL_BATCH_SIZE=2^18 SEUL = meilleur résultat** : 1.086682 (exp1 run5). C'est le seul changement qui a battu le baseline (1.090077).
+- **NE JAMAIS combiner 2^18 avec d'autres changements dans la même expérience.** Exp4 (+HEAD_DIM=64 → 1.104), Exp5 (+warmup → 1.093), Exp6 (+cosine warmdown → 1.095) — tous pires que le baseline.
+- **SwiGLU ne marche pas** à cette échelle : testé 2 fois (exp1 run1 + exp7), toujours pire (~1.099-1.105). ReluSquared est meilleur pour ce petit modèle.
+- **Plus gros modèles = pire** : DEPTH=10 (1.133), DEPTH=12 (1.234). Pas assez de steps en 5 min.
+- **HEAD_DIM=64 (8 heads) = pire** que HEAD_DIM=128 (4 heads). Contre-intuitif mais confirmé.
+- **DEVICE_BATCH_SIZE=64 = pire** (exp1 run3: 1.103). Garder 32.
+- **Le SDPA path (non-Hopper) n'a PAS de sliding window.** Toutes les layers font full causal attention sur RTX 5090.
+
+### Prochaines pistes (après avoir confirmé 2^18)
+- 2^18 est confirmé (exp9: 1.089807). Tenter des changements architecturaux PAR DESSUS ce baseline.
+- **Exp10 parallel attn+MLP = pire** (1.095421). Le conditionnement séquentiel est important à cette échelle.
+- **Exp11 remove softcap = pire** (1.097215). Softcap=15 est important, ne pas toucher.
+- **Exp12 teste VE uniquement sur le dernier layer** (has_ve → layer_idx == n_layer - 1). Réduit 12.6M params (25%). Si ça marche → vitesse = steps = convergence confirmé comme facteur dominant.
+- Pistes non testées :
+  - ALiBi au lieu de RoPE (supprime les rotary embeddings, simplifie le code)
+  - Softcap 30 au lieu de 15 (la suppression totale a échoué exp11, mais un softcap plus haut pourrait aider)
+  - Implémenter sliding window dans le SDPA path (mask causal custom pour les layers S)
+  - Schedule-Free Adam (remplacer tout le warmup/warmdown scheduler par l'optimizer schedule-free de Meta)
+  - ASPECT_RATIO différent : plus large (ASPECT_RATIO=80 → 640 dim, 5 heads) avec même DEPTH=8
+  - Supprimer x0_lambdas (simplification si VE fait déjà le job)
+  - Tester WEIGHT_DECAY=0.0 (actuellement 0.2, le cautious WD pourrait nuire à cette échelle)
+  - Si exp12 VE-last-only marche : tester VE=0 (remove all VE) pour encore plus de speed
+  - Si exp12 VE-last-only échoue : tester VE sur 2 layers (5,7) au lieu de 4 — compromis
+- **Note sur la variance** : exp1 run5 a obtenu 1.086682 mais exp9 (même code) a obtenu 1.089807. ~0.003 de variance entre runs. Seules les améliorations > 0.003 sont significatives.
+
+### Leçons de la série actuelle (experiments 0-5)
+- **Baseline = 1.088007** avec TOTAL_BATCH_SIZE=2^18, VE-last-only, softcap=15, x0_lambdas, ReluSquared MLP
+- **VE=0 = 1.111** (+0.023). VE est critique, ne pas supprimer.
+- **Softcap 30 = 1.093** (+0.005). Softcap=15 est bien calibré.
+- **Remove x0_lambdas = 1.108** (+0.020). x0_lambdas sont importants pour le gradient flow.
+- **GQA n_kv_head=2 = 1.088248** (+0.000241). Essentially tied with baseline. KV capacity reduction almost free at this scale. GQA is viable.
+- **WEIGHT_DECAY=0.0 = 1.091936** (+0.004). WD=0.2 is better, keep it. Mild regularization helps even in short training.
+- **Exp6 teste TOTAL_BATCH_SIZE=2^17** (doubler les optimizer steps, grad_accum=2). Si ça marche → "more steps" hypothesis extends further. Si ça échoue → 2^18 est le sweet spot.
+- **Exp6 2^17 = pire** (1.098882, +0.011). 2^18 est le sweet spot confirmé. Les gradients deviennent trop bruiteux avec des batches plus petits.
+- **Exp7 MATRIX_LR=0.06 = crash infra** (RunPod API timeout, code never ran on GPU). Re-tested in exp8.
+- **Exp8 MATRIX_LR=0.06 = 1.088767** (+0.00076). Within noise — 0.04 is fine, 0.06 doesn't help.
+- **Exp9 Z-loss = 1.087971** (-0.000036). Marginal improvement, within noise but kept. Z-loss helps gradient flow through softcap.
+- **Exp10 teste MTP** (Multi-Token Prediction) : auxiliary loss predicting token i+2 via learned projection + shared lm_head. Weight 0.1. ~10-15% compute overhead.
+- **Exp10 MTP crashed** — likely a code bug. Worth debugging and retrying if we need more ideas.
+- **Exp11 teste embedding tying** (wte = lm_head weight sharing). LR compromise: geometric mean of 0.6 and 0.004 ≈ 0.049. Init std=0.5.
+- Pistes non testées restantes :
+  - Schedule-Free Adam (remplace tout le scheduler par un optimizer adaptatif, pourrait être le meilleur next step)
+  - Differential Transformer (attention par paires de heads avec soustraction, mais complexe à implémenter avec SDPA)
+  - MQA (n_kv_head=1) — GQA était un tie, MQA pourrait aller plus loin, mais VE dim shrinks to 128
+  - Low-rank VE (réduire VE embedding dim avec projection, save ~87% VE params)
+  - Stochastic Depth (layer drop) : skip aléatoire de layers pendant le training pour régulariser + accélérer (NOTE: impossible à accélérer avec torch.compile car branches = graph breaks, seul l'effet régularisation marche)
+  - WARMDOWN_RATIO=0.4 (actuellement 0.6) : plus de steps à full LR, mais risque de sous-convergence en fin de training
+  - Note: ALiBi désactive le fast path SDPA (custom mask nécessaire), probablement pas worth it
+  - Si exp11 embedding tying marche : tester des LR plus agressives (0.1, 0.2) pour le tied weight
+  - Si exp11 embedding tying échoue : le compromis LR est probablement le problème. Tester avec un LR plus proche de 0.004 (ex: 0.01) ou plus proche de 0.6 (ex: 0.3)
+  - Si z-loss marche : tester coefficient plus grand (1e-3) ou plus petit (1e-5)
+  - **MTP est mort** : exp12 a donné 1.093 (+0.005). Le compute overhead (~10-15% fewer steps) ne compense pas le gradient signal supplémentaire. Abandonner MTP.
+  - Embedding tying (exp11 crashed) : à retenter proprement si on manque d'idées. Attention au compromis LR.
+  - **Exp13 teste WARMDOWN_RATIO=0.4** (actuellement 0.6). Si ça marche → tester 0.3 (encore plus agressif). Si ça échoue → 0.6 est optimal.
+  - Si WARMDOWN_RATIO=0.4 marche : combiner avec z-loss coefficient tuning (1e-3 ou 1e-5)
+  - **Exp13 WARMDOWN_RATIO=0.4 = 1.089407** (+0.0014). Within noise but no improvement. 0.6 is fine.
+  - **Exp14 teste MLP 3x** (hidden dim 1536 au lieu de 2048). Saves ~4.2M params, faster fwd/bwd → more steps.
+  - Prochaines pistes si exp14 échoue :
+    - MLP 2x (plus agressif, 1024 hidden dim — gros gain de vitesse mais capacité très réduite)
+    - `torch.compile(mode="max-autotune")` au lieu de default — autotuned kernels + CUDA graphs potentiels, zero architectural change
+    - WARMDOWN_RATIO=0.5 (compromis entre 0.4 et 0.6)
+    - Embedding tying retry (exp11 crashed, jamais testé sur GPU)
+    - Differential Transformer (complexe mais potentiellement high-impact)
+  - Si exp14 MLP 3x marche :
+    - Tester MLP 2.5x ou 2x pour encore plus de speed
+    - Combiner MLP 3x avec DEPTH=9 (redistribuer les params économisés en plus de layers)
+    - Tester GeGLU/SwiGLU à 3x ratio (SwiGLU a échoué à 4x, peut-être que 3x change la donne)
+  - Note: la plupart des low-hanging fruits sont épuisés. Les gains > 0.003 vont être difficiles.
+  - Note: Muon NS iterations (ns_steps=5) coûtent très peu en compute (matmuls batched 512×512 = ~0.05ms). Réduire ns_steps ne vaut pas le coup.
+  - **Exp14 MLP 3x = 1.079602** (BEST EVER, -0.008 from baseline). Massive win. "More steps" strategy confirmed dominant.
+  - **Exp15 teste MLP 2.5x** (hidden 1280 au lieu de 1536). Continue la stratégie gagnante.
+  - Si exp15 MLP 2.5x marche :
+    - Tester MLP 2x (1024 hidden) pour pousser encore plus loin
+    - Combiner MLP 2.5x avec `torch.compile(mode="max-autotune")` pour encore plus de vitesse
+  - Si exp15 MLP 2.5x échoue (régression) :
+    - 3x est le sweet spot. Tester d'autres optimisations compute-réductrices :
+    - `torch.compile(mode="max-autotune")` — zero risk, pourrait gagner 5-10% throughput
+    - Réduire DEPTH=7 avec MLP 3x (moins de layers mais plus rapides)
+    - Réduire n_embd (ASPECT_RATIO=56 → dim=448, mais 448/128=3.5 heads... arrondi nécessaire)
+    - DEVICE_BATCH_SIZE=48 ou 64 pour mieux utiliser le GPU (exp1 run3 a testé 64 mais c'était avec 4x MLP, peut-être différent avec 2.5x)
+  - **Exp15 MLP 2.5x = 1.082175** (+0.0026 vs 3x). 3x confirmed as sweet spot.
+  - **Exp16 torch.compile(mode="max-autotune") CRASHED** — CUDA graph overwrite error during gradient accumulation. Fix: `torch.compiler.cudagraph_mark_step_begin()` before each forward call.
+  - **Exp17 retries max-autotune with the cudagraph_mark_step_begin() fix.** Same idea, proper CUDA graph lifecycle management.
+  - Si exp17 max-autotune marche :
+    - Combiner avec DEPTH=7 (fewer layers + faster execution)
+    - Tester DEVICE_BATCH_SIZE=48 avec MLP 3x (meilleure utilisation GPU avec le modèle plus petit)
+    - Tester `mode="reduce-overhead"` comme alternative (CUDA graphs sans autotuning overhead)
+  - Si exp17 max-autotune échoue/neutral :
+    - DEPTH=7 avec MLP 3x (supprimer 1 layer = ~12.5% less compute, mais perte de capacité)
+    - DEPTH=9 avec MLP 3x et smaller dim (ASPECT_RATIO=56 → dim=504→512, 4 heads, 9 layers: more layers but similar total compute)
+    - Embedding tying retry (never successfully tested — exp11 crashed)
+    - Schedule-Free Adam (replace entire warmup/warmdown scheduler)
+    - GeGLU à 3x (SwiGLU échoué à 4x, mais 3x = moins de compute, potentiellement différent)
+  - Note: si max-autotune crash encore, la piste CUDA graphs est morte. Passer à DEPTH=7 ou Schedule-Free Adam.
+  - **Exp17 max-autotune CRASHED again.** CUDA graphs are dead with gradient accumulation. Moving on.
+  - **Exp18 teste DEPTH=7** avec MLP 3x. Model dim stays 512. Saves ~2.6M matrix params (~12.5% compute reduction).
+  - Si exp18 DEPTH=7 marche :
+    - Tester DEPTH=6 (encore plus agressif, mais 6*64=384 → arrondi à 512, même dim)
+    - Combiner DEPTH=7 avec ASPECT_RATIO plus grand pour augmenter dim (ex: ASPECT_RATIO=80 → 7*80=560 → arrondi 640, 5 heads)
+    - Tester DEPTH=7 + WARMDOWN_RATIO=0.5 (compromis)
+  - Si exp18 DEPTH=7 échoue :
+    - 8 layers est le minimum viable. Focus sur d'autres axes :
+    - Schedule-Free Adam (replace scheduler entirely)
+    - Embedding tying retry (never successfully tested)
+    - FP8 matmuls sur Blackwell (2x throughput potentiel, mais implémentation complexe)
+    - `torch.compile(fullgraph=True)` sur le modèle entier (peut aider sans CUDA graphs)
+    - Réduire grad_accum: DEVICE_BATCH_SIZE=64 avec TOTAL_BATCH_SIZE=2^18 → grad_accum=4 (fewer micro-steps overhead)
+  - **Exp18 DEPTH=7 = 1.112418** (+0.033). Catastrophique. 8 layers est le minimum absolu. Depth matters MORE than width.
+  - **Exp19 teste factored lm_head** : bottleneck 512→256 avant lm_head 256→32768. Le lm_head est ~36% des FLOPs forward totaux. Factorisation = ~50% moins de FLOPs pour l'output, ~18% moins de compute total.
+  - Si exp19 factored lm_head marche :
+    - Tester bottleneck 128 (encore plus agressif, ~75% reduction lm_head FLOPs)
+    - Combiner avec DEVICE_BATCH_SIZE=64 pour encore plus de throughput
+    - Tester une activation non-linéaire dans le bottleneck (ReLU ou GELU avant lm_head)
+  - Si exp19 factored lm_head échoue :
+    - 256 dims trop restrictif. Tester bottleneck 384 (plus conservateur, ~24% reduction)
+    - DEVICE_BATCH_SIZE=64 (zero risk, fewer grad_accum steps)
+    - FP8 matmuls (2x throughput sur Blackwell, mais implémentation complexe)
+    - DEPTH=9 + ASPECT_RATIO=56 + MLP 2.5x (iso-compute avec plus de depth)
+    - Embedding tying retry (exp11 crashed, jamais testé sur GPU)
+  - Note: le lm_head compute est souvent sous-estimé. Avec vocab_size=32768 et n_embd=512, c'est une matmul (B*T, 512) × (512, 32768) = 1.1T FLOPs par micro-step. C'est plus que tous les 8 transformer layers combinés pour l'attention (549G).
+  - **Exp19 factored lm_head CRASHED** — code was correct (verified), crash was RunPod infra. Retrying as exp20.
+  - **Exp20 retries factored lm_head** (identical to exp19). Same 256-dim bottleneck.
+  - Si exp20 factored lm_head marche :
+    - Tester bottleneck 128 (encore plus agressif, ~75% reduction lm_head FLOPs)
+    - Combiner avec DEVICE_BATCH_SIZE=64 pour encore plus de throughput (grad_accum 4→2)
+    - Tester une activation non-linéaire dans le bottleneck (ReLU entre lm_proj et lm_head)
+  - Si exp20 factored lm_head échoue (régression, not crash) :
+    - 256 dims trop restrictif. Tester bottleneck 384 (n_embd*3/4, plus conservateur)
+    - DEVICE_BATCH_SIZE=64 (zero risk, never tested with MLP 3x — exp1 run3 used 4x MLP)
+    - Schedule-Free Adam (replace warmup/warmdown entirely)
+    - Embedding tying retry (exp11 crashed, never tested)
+  - Si exp20 crash encore :
+    - Le problème est RunPod infra, pas le code. Réessayer ou passer à DEVICE_BATCH_SIZE=64.
+  - **Exp20 factored lm_head = 1.095730** (+0.016). 256-dim bottleneck too restrictive. Factored lm_head strategy is dead — even 384 probably not worth trying given the large regression.
+  - **Exp21 teste max-autotune-no-cudagraphs** : mode qui donne les Triton kernels autotuned SANS CUDA graphs. Exp16/17 ont crashé à cause des CUDA graphs + grad accum, mais ce mode les désactive explicitement.
+  - Si exp21 max-autotune-no-cudagraphs marche :
+    - Combiner avec DEVICE_BATCH_SIZE=64 (double bénéfice: meilleurs kernels + moins de grad_accum overhead)
+    - Tester avec `torch._inductor.config.coordinate_descent_tuning = True` pour encore plus d'autotuning
+  - Si exp21 max-autotune-no-cudagraphs est neutre :
+    - Les kernels par défaut sont déjà optimaux pour nos shapes. Passer à DEVICE_BATCH_SIZE=64.
+  - Si exp21 max-autotune-no-cudagraphs crash :
+    - L'autotuning Triton a un bug. Passer à DEVICE_BATCH_SIZE=64.
+  - Prochaines pistes (priorité décroissante) :
+    - DEVICE_BATCH_SIZE=64 (grad_accum 4→2, meilleure utilisation GPU, never tested with MLP 3x)
+    - Schedule-Free Adam (replace warmup/warmdown entirely, complex to integrate with Muon)
+    - Embedding tying retry (exp11 crashed, never tested — LR compromise is tricky)
+    - FP8 matmuls (2x throughput potentiel sur Blackwell, mais implémentation complexe)
+    - Note: la plupart des "more compute reduction" ideas sont épuisées (MLP 2.5x pire, DEPTH=7 catastrophique, factored lm_head pire). Il faut trouver de nouvelles approches.
+  - **Exp21 max-autotune-no-cudagraphs = 1.098823** (+0.019). Autotuning actually HURT — probably because compilation overhead ate into effective training time, or the autotuned kernels are slower for our specific shapes. All torch.compile tuning modes are now dead. Default mode is optimal.
+  - **Exp22 teste DEPTH=9 + MLP 2.5x + ASPECT_RATIO=56** — iso-compute depth-for-width swap. 9 layers × 2.5x MLP (21.23M matrix params) vs 8 layers × 3x MLP (20.97M, +1.25%). Model dim stays 512.
+  - Si exp22 DEPTH=9 + MLP 2.5x marche :
+    - Tester DEPTH=10 + MLP 2x (iso-compute: 10 layers, MLP 1024 hidden) — push depth even further
+    - Tester DEPTH=9 + MLP 3x (non-iso-compute, bigger model but more capacity per layer, ~12% more compute)
+    - Combiner avec DEVICE_BATCH_SIZE=64 (grad_accum 4→2) pour regagner les steps perdus
+  - Si exp22 DEPTH=9 + MLP 2.5x échoue :
+    - Le sweet spot est 8 layers avec 3x MLP. No more depth-width tradeoffs.
+    - DEVICE_BATCH_SIZE=64 (never tested with MLP 3x — grad_accum 4→2, potentially faster)
+    - Schedule-Free Adam (replace warmup/warmdown entirely)
+    - Embedding tying retry (exp11 crashed, never tested on GPU)
+    - GeGLU at 3x ratio (untested, different activation function)
+    - FP8 matmuls (2x throughput on Blackwell, complex implementation)
+  - Note: DEPTH is the most valuable axis. 7→8 = +0.033. But diminishing returns are expected. The question is whether 8→9 benefit > 2.5x MLP cost (~0.003).
+  - **Exp22 DEPTH=9 + MLP 2.5x = 1.080504** (+0.0009). Very close to best but no improvement. 8 layers × 3x MLP is the sweet spot.
+  - **Exp23 teste lm_head with Muon** instead of AdamW. The lm_head (32768×512) is 44% of matrix FLOPs. NS orthogonalization pushes output vectors toward orthogonality. Effective LR = 0.04 * 8.0 = 0.32 (rectangular scaling). NorMuon self-corrects step size.
+  - Si exp23 lm_head Muon marche :
+    - Tester avec lower base LR (0.02 or 0.01) for lm_head Muon group specifically
+    - Combiner avec DEVICE_BATCH_SIZE=64 (grad_accum 4→2)
+    - Tester embedding tying with Muon for the shared weight (now both wte and lm_head can share a Muon-optimized weight)
+  - Si exp23 lm_head Muon échoue :
+    - The high effective LR (0.32) might be the problem. Retry with lm_head-specific lower LR (create separate Muon group for lm_head with lr=0.005, effective=0.04)
+    - DEVICE_BATCH_SIZE=64 (never tested with MLP 3x — grad_accum 4→2, potentially faster)
+    - Schedule-Free Adam (replace warmup/warmdown entirely)
+    - Embedding tying retry (exp11 crashed, never tested on GPU)
+    - Note: also adds cautious WD to lm_head (was 0.0). If result is close, try Muon with WD=0 for lm_head.
+  - Note on lm_head Muon mechanics: NS for (32768,512) uses `X.mT @ X` = 512×512 matmuls (cheap). The 32768 rows get pushed toward approximate isometry in 512-dim space. This is a strong structural prior for the output layer.
+  - Remaining untested ideas (after exp23): DEVICE_BATCH_SIZE=64, Schedule-Free Adam, embedding tying, FP8 matmuls, GeGLU 3x, Differential Transformer.
+  - **Exp24 DEVICE_BATCH_SIZE=64 = 1.095282** (+0.016). Terrible. VRAM doubled to 19.7GB. Larger micro-batches are SLOWER, not faster — GPU is memory-bandwidth limited. DEVICE_BATCH_SIZE=32 is optimal. Don't try 64 again.
+  - **Exp25 teste SwiGLU at iso-compute**: replace ReluSquared (3x hidden=1536, 2 matrices) with SwiGLU (2x hidden=1024, 3 matrices fused as gate+up). Same FLOPs, same params. Tests whether gating quality > wider hidden dim.
+  - Si exp25 SwiGLU marche :
+    - SwiGLU is confirmed better. Update baseline permanently.
+    - Try SwiGLU at slightly larger hidden (e.g., 2.25x = 1152) to see if more capacity helps
+    - Combine SwiGLU with DEPTH=9 iso-compute swap (DEPTH=9 + SwiGLU at ~1.7x hidden)
+  - Si exp25 SwiGLU échoue :
+    - ReluSquared is confirmed better at this scale. The sparsity/squaring matters more than gating.
+    - Try ReGLU (relu gating) at iso-compute — might combine ReluSquared's sparsity advantage with gating
+    - Schedule-Free Adam (orthogonal to MLP architecture)
+    - FP8 matmuls (last frontier for "more steps" strategy — 2x throughput potential)
+    - Embedding tying retry (exp11 crashed, never tested on GPU)
+    - Differential Transformer (attention architecture change, complex but potentially high-impact)
+  - Note: all "more steps via less compute" ideas are EXHAUSTED. MLP 3x is the sweet spot. DEPTH=8 is minimum. Factored lm_head failed. torch.compile tuning failed. DEVICE_BATCH_SIZE tuning failed. Future improvements must come from QUALITY per step, not speed.
+  - **Exp25 SwiGLU = CRASH (infra)** — RunPod CUDA driver init failure, code never ran on GPU. SwiGLU iso-compute is UNTESTED. Worth retrying.
+  - **Exp26 EMA = CRASH (infra)** — RunPod issue, code never ran on GPU. EMA is UNTESTED. Retried as exp27.
+  - **Exp27 retries EMA** (decay=0.995, ~200 step window). Identical approach to exp26. Clone params after compile, lerp after each optimizer step, swap before eval.
+  - Si exp27 EMA marche :
+    - Tester decay=0.99 (shorter window, ~100 steps) — might be better if end-of-training weights are best
+    - Tester decay=0.999 (longer window, ~1000 steps) — might be better if broad averaging helps
+    - Combiner EMA avec SwiGLU retry (two orthogonal improvements)
+  - Si exp27 EMA échoue (neutral or regression) :
+    - The warmdown schedule already provides good convergence. EMA is redundant.
+    - Retry SwiGLU iso-compute (exp25 was infra crash, never tested)
+    - Schedule-Free Adam (replace warmup/warmdown entirely — if EMA didn't help, maybe the schedule itself needs replacing)
+    - Embedding tying retry (exp11 crashed, never tested on GPU)
+    - FP8 matmuls (2x throughput on Blackwell)
+    - Differential Transformer (attention with subtraction between head pairs)
+  - Si exp27 EMA crash encore :
+    - Le problème est RunPod infra, pas le code. Retry SwiGLU iso-compute (also infra crash) or move to Schedule-Free Adam.
+  - **Exp28 retries SwiGLU iso-compute** (exp25 crashed infra). Same code: c_fc(512→2048 fused gate+up), c_proj(1024→512 down), silu(gate)*up. Zero compute change.
+  - Si exp28 SwiGLU marche :
+    - SwiGLU confirmed better. Update baseline permanently.
+    - Combine SwiGLU with EMA (two orthogonal improvements, both previously crashed on infra)
+    - Try SwiGLU at slightly larger hidden (2.25x = 1152 hidden, slightly more capacity)
+    - Try GeGLU (gelu gating instead of silu) at iso-compute
+  - Si exp28 SwiGLU échoue (tested, not crash) :
+    - ReluSquared confirmed better at this scale. The sparsity/squaring > gating at small model size.
+    - EMA retry (exp26/27 both infra crashes, never tested — orthogonal to MLP architecture)
+    - Schedule-Free Adam (replace warmup/warmdown entirely)
+    - ReGLU at iso-compute (relu gating — combines sparsity + gating, best of both worlds)
+    - Embedding tying retry (exp11 crashed, never tested on GPU)
+    - Differential Transformer (attention architecture change)
+  - Si exp28 SwiGLU crash (infra again) :
+    - Give up on RunPod reliability for this session. Try EMA or Schedule-Free Adam next.
+  - Note: 3 consecutive infra crashes (exp25/26/27). If exp28 also crashes, may need to investigate RunPod stability.
+  - **Exp28 SwiGLU = CRASH (infra again)** — 4th consecutive infra crash. SwiGLU iso-compute remains UNTESTED.
+  - **Exp29 retries EMA** (3rd attempt, decay=0.995). Same idea as exp26/27. Clone params after compile, lerp after each optimizer step, swap before eval.
+  - Si exp29 EMA marche :
+    - Tester decay=0.99 (shorter window, ~100 steps) — might be better for short training
+    - Tester decay=0.999 (longer window, ~1000 steps) — might be better if broad averaging helps
+    - Combiner EMA avec SwiGLU retry (two orthogonal improvements, if infra stabilizes)
+  - Si exp29 EMA échoue (neutral or regression) :
+    - The warmdown schedule already provides good convergence. EMA is redundant.
+    - Retry SwiGLU iso-compute (crashed 2x on infra, never tested)
+    - Schedule-Free Adam (replace warmup/warmdown entirely)
+    - ReGLU at iso-compute (relu gating — combines ReluSquared's sparsity + gating, untested)
+    - Differential Transformer (attention with subtraction between head pairs, complex but high-impact)
+    - Label smoothing (simple regularization, ~1 line change, untested)
+  - Si exp29 EMA crash (infra again) :
+    - 5th consecutive infra crash would be catastrophic. Consider debugging RunPod setup or switching infra.
+  - Note: ALL infra crashes (exp25-28) were RunPod CUDA driver init or API timeouts. The code itself was verified correct each time.
+  - **Exp29 EMA = 1.096033** (+0.016). EMA is DEAD. The warmdown schedule converges better than averaged weights. The EMA (decay=0.995) mixes in weights from ~200 steps back when the model was significantly worse. Don't retry EMA.
+  - **Exp30 retries SwiGLU iso-compute** (3rd attempt). Infra confirmed stable (exp29 ran). Code identical to exp25/28.
+  - Si exp30 SwiGLU marche :
+    - SwiGLU confirmed better. Update baseline permanently.
+    - Try SwiGLU at 2.5x hidden (1280 total gate+up, 640 hidden) — iso-compute with slightly less capacity
+    - Try GeGLU (gelu gating instead of silu) at iso-compute
+    - Combine SwiGLU with DEPTH=9 iso-compute swap (DEPTH=9 + SwiGLU at ~1.7x hidden)
+  - Si exp30 SwiGLU échoue (tested, not crash) :
+    - ReluSquared confirmed better at this scale. Sparsity/squaring > gating at small model size.
+    - ReGLU at iso-compute (relu gating — combines sparsity + gating, best of both worlds)
+    - Schedule-Free Adam (replace warmup/warmdown entirely, complex but potentially high-impact)
+    - Label smoothing (1-line change, zero risk, untested)
+    - Embedding tying retry (exp11 crashed, never tested on GPU)
+    - Differential Transformer (attention with subtraction between head pairs, complex)
+    - FP8 matmuls on Blackwell (2x throughput, complex implementation)
+  - Si exp30 SwiGLU crash (infra) :
+    - Something specific to SwiGLU code causes infra issues (unlikely). Give up on SwiGLU, move to ReGLU or Schedule-Free Adam.
+  - Note: EMA dead, factored lm_head dead, torch.compile tuning dead, batch size tuning dead, DEPTH reduction dead. Remaining axes: MLP activation (SwiGLU/ReGLU/GeGLU), optimizer (Schedule-Free), regularization (label smoothing), attention (Differential Transformer), weight sharing (embedding tying), precision (FP8).
+  - **Exp30 SwiGLU iso-compute = 1.083872** (+0.004). ReluSquared confirmed better at this scale. Sparsity/squaring > gating at small model size. SwiGLU is DEAD for this setup.
+  - **Exp31 teste DEPTH=9 + GQA (n_kv_head=2) + MLP 3x** — iso-compute reallocation from attention to MLP. Same 2,359,296 matrix params/layer as exp22, but 786K attn + 1.57M MLP instead of exp22's 1.05M attn + 1.31M MLP. Preserves winning MLP 3x while gaining depth via GQA savings.
+  - Si exp31 DEPTH=9 + GQA + MLP 3x marche :
+    - Tester DEPTH=10 + GQA + MLP 2.5x (push depth even further with GQA savings)
+    - Tester MQA (n_kv_head=1) at DEPTH=9 + MLP 3x (even more attention savings → possible DEPTH=10)
+    - Combiner avec cosine warmdown schedule (orthogonal improvement)
+  - Si exp31 DEPTH=9 + GQA + MLP 3x échoue :
+    - The depth-for-attention-width tradeoff doesn't work either. 8 layers × 4 heads × 3x MLP is the irreducible sweet spot.
+    - Schedule-Free Adam (replace warmup/warmdown entirely, complex but last major untested optimizer idea)
+    - Label smoothing at small alpha (0.02-0.05, 1-line change)
+    - Cosine warmdown schedule (1-line change, might extract ~0.001 from warmdown shape)
+    - Embedding tying retry (exp11 crashed, never tested)
+    - ReGLU at iso-compute (relu gating, combines sparsity + gating — but SwiGLU loss suggests gated MLPs are worse than wider ReluSquared at this scale)
+    - FP8 matmuls (2x throughput on Blackwell, complex but last "more steps" frontier)
+  - Note: if exp31 ≈ exp22 (~1.080), confirms that 9-layer configs are consistently ~0.001 worse than 8×MLP3x regardless of compute allocation. Would mean DEPTH=8 is truly optimal.
+  - Note: ideas nearly exhausted. After exp31, remaining high-value options: Schedule-Free Adam, FP8 matmuls, cosine warmdown, label smoothing. All are either complex (Schedule-Free, FP8) or likely small-impact (cosine warmdown, label smoothing).
+  - **Exp32 teste lm_head Muon retry** with conservative LR=0.005 (effective 0.04). Exp23 crashed (likely infra, not code). This time with dedicated Muon group at 8× lower base LR than exp23.
+  - Si exp32 lm_head Muon marche :
+    - Tester lr=0.003 (effective 0.024) or lr=0.008 (effective 0.064) to find optimal LR for lm_head Muon
+    - Try removing cautious WD for lm_head Muon group (was 0.0 with AdamW) — isolate WD vs Muon effect
+    - Combine lm_head Muon with embedding tying (both embedding and output in Muon space)
+  - Si exp32 lm_head Muon échoue :
+    - If regression > 0.005: effective LR 0.04 is still too high. Try lr=0.001 (effective 0.008, close to original AdamW 0.005)
+    - If regression ~0.001-0.003: within noise, Muon is neutral for lm_head. AdamW is fine.
+    - If crash: truly a code incompatibility with tall matrices in Muon (unlikely). Debug stacking/unstacking.
+    - Move to label smoothing (alpha=0.1, 1-line, zero risk, untested)
+    - Or cosine warmdown schedule (1-line change)
+    - Or Schedule-Free Adam for AdamW params only (complex but last major optimizer idea)
+  - Note: lm_head Muon also adds cautious WD (was 0.0). If result is close, isolate this variable.
+  - **Exp32 lm_head Muon = CRASH** — 2nd crash for this idea (exp23 also crashed). Could be code issue with stacking a single lm_head param, or infra. Not retrying a third time without debugging.
+  - **Exp33 teste label smoothing (alpha=0.1)** — `F.cross_entropy(..., label_smoothing=0.1)`. Zero compute overhead. Synergy with softcap (less incentive to push logits to ±15 tanh saturation) and z-loss (both reduce large logit incentive). Proven in GPT-3/PaLM/Chinchilla. First pure regularization test beyond z-loss/softcap.
+  - Si exp33 label smoothing marche :
+    - Tester alpha=0.05 (less aggressive) or alpha=0.2 (more aggressive) to find optimal
+    - Combine with cosine warmdown schedule (orthogonal improvement)
+    - Combine with Schedule-Free Adam (orthogonal)
+  - Si exp33 label smoothing échoue :
+    - If regression > 0.005: alpha=0.1 too aggressive, try alpha=0.02 or 0.05
+    - If regression ~0.001-0.003: within noise, label smoothing is neutral. z-loss+softcap already handle calibration.
+    - Move to cosine warmdown schedule (1-line change, untested)
+    - Or Schedule-Free Adam (complex but last major optimizer idea)
+    - Or FP8 matmuls on Blackwell (2x throughput, complex implementation, last "more steps" frontier)
+    - Or embedding tying retry with proper debugging (crashed twice, never tested on GPU)
+    - Or ReGLU at iso-compute (relu gating — but SwiGLU loss suggests gated MLPs worse than wider ReluSquared)
+  - Note: DEAD ideas — EMA, factored lm_head, torch.compile tuning, batch size tuning, DEPTH reduction, SwiGLU, MTP, DEPTH=9 configs, WARMDOWN_RATIO changes, MATRIX_LR=0.06, WEIGHT_DECAY=0.0, softcap=30, removing x0_lambdas, removing VE, MLP 2.5x, DEVICE_BATCH_SIZE=64, lm_head Muon (2x crash).
+  - Remaining untested axes: regularization (label smoothing alpha tuning), schedule shape (cosine warmdown), optimizer (Schedule-Free Adam), precision (FP8), attention (Differential Transformer), weight sharing (embedding tying).
+

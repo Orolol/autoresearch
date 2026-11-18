@@ -1,0 +1,15 @@
+All done. Here's a summary of experiment 25:
+
+**Exp25: SwiGLU MLP at iso-compute**
+
+| Aspect | Before | After |
+|---|---|---|
+| Activation | `F.relu(x).square()` | `F.silu(gate) * up` |
+| c_fc shape | (1536, 512) | (2048, 512) fused gate+up |
+| c_proj shape | (512, 1536) | (512, 1024) down |
+| MLP params/layer | 1,572,864 | 1,572,864 |
+| FLOPs/token/layer | 3,145,728 | 3,145,728 |
+
+**Why this should work**: SwiGLU's multiplicative gating provides richer feature selection than ReluSquared's self-squaring. Used in every modern LLM. Previous SwiGLU failure was at 4x MLP with a completely different baseline — not comparable.
+
+**Key insight**: All "more steps via less compute" ideas are exhausted (MLP 2.5x worse, DEPTH=7 catastrophic, factored lm_head worse, torch.compile tuning worse, batch=64 worse). This experiment pivots to **quality per step** — same compute envelope, better architecture.

@@ -1,0 +1,8 @@
+Everything looks correct. Let me verify the math one more time: `3 * 512 * 2 // 3 = 3072 // 3 = 1024`. Yes.
+
+Summary of experiment #28:
+
+- **What**: Retry SwiGLU at iso-compute (exp25 crashed on infra, never tested on GPU)
+- **Change**: Replace `relu(x).square()` with `silu(gate) * up` in MLP, using fused gate+up projection (512→2048) and down projection (1024→512)
+- **Why**: SwiGLU is standard in all modern LLMs. Iso-compute swap = same params, same FLOPs, same memory. Only tests whether gating quality > squaring quality. Previous SwiGLU failure was at 4x MLP scale, completely different regime.
+- **Risk**: Zero. No compute/memory/speed change. Worst case: neutral within noise (~0.003).

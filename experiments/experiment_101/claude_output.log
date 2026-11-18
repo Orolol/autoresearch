@@ -1,0 +1,11 @@
+Done. Here's the summary:
+
+**Experiment #101**: Retry sandwich norm (post-sublayer RMSNorm)
+
+**Change**: 2 lines in `Block.forward` (train.py:132-133):
+- `x = x + self.attn(...)` → `x = x + norm(self.attn(...))`
+- `x = x + self.mlp(...)` → `x = x + norm(self.mlp(...))`
+
+**Rationale**: Exp100 attempted this exact change but crashed on RunPod infra (CUDA init failure pattern). The code was never tested on GPU. Sandwich norm is a proven technique (PaLM, CogView) that bounds each sublayer's contribution to O(1) scale, preventing residual stream growth across 16 sublayer additions. Zero new params, minimal compute overhead.
+
+**Expected range**: -0.003 to +0.005 val_bpb.

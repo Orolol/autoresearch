@@ -1,0 +1,1 @@
+Done. Experiment 37 = retry softcap=12 (exp36 crashed infra, never tested). Single change: `softcap = 15` → `softcap = 12`. Zero risk, code verified syntactically correct. Ready for ralph.sh.

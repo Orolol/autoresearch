@@ -1,0 +1,7 @@
+All changes are correct and consistent. Summary of experiment 155:
+
+**Change**: Added `val_scale = nn.Linear(8, 4)` per layer — input-dependent per-head V magnitude scaling using the same sparse input pattern as attention gate and Q-temperature.
+
+**Why**: Supply-side modulation (controls how much each key position's value contributes) complementary to the existing demand-side attention gate (controls how much each query receives). Mathematically distinct from dead K-temperature (which changed attention distribution, redundant with Q-temp).
+
+**Safety**: Zero-init → `2*sigmoid(0) = 1.0` → identical start. 256 new params total. No crash risk, no OOM risk, torch.compile compatible.

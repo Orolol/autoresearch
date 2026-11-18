@@ -1,0 +1,13 @@
+Everything looks clean. The changes are:
+1. `x0_lambdas` parameter removed from `__init__`
+2. `x0_lambdas.fill_(0.1)` removed from `init_weights`  
+3. Forward loop simplified: `x = self.resid_lambdas[i] * x` (no more `+ self.x0_lambdas[i] * x0`)
+4. Optimizer and param counting updated
+
+**Experiment 3: Remove x0_lambdas**
+- x0_lambdas added 10% of the initial embedding at every layer, a skip connection from embedding to each layer
+- VE already provides direct token→value signal in the last layer, potentially making x0_lambdas redundant
+- If quality is within noise (~0.003): simplification win
+- If regression > 0.005: x0_lambdas matters for gradient flow, revert
+
+Ready for ralph.sh to launch training.

@@ -1,0 +1,8 @@
+Done. Here's the summary:
+
+**Experiment #198: Continuous MLP width ramp**
+
+- **Change**: Replaced coarse 2-step MLP expansion (1.5x/4.5x) with smooth 8-point ramp `[1.0, 1.25, 1.75, 2.25, 3.25, 4.25, 5.0, 5.25]`
+- **Why**: Chunk attention axis exhausted (4 consecutive failures post-exp193). This is the #1 pivot from the priority queue. Exp123/124 tried similar ramps but INFRA-crashed — never GPU-tested. The non-uniform MLP trend was consistently positive (each refinement improved).
+- **Iso-compute**: Average expansion = 3.0x, identical total FLOPs to baseline
+- **Risk**: Low — standard ops, static shapes, no new parameters. Main concern is layer 0 getting only 1.0x MLP (512 hidden)

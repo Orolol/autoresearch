@@ -1,0 +1,9 @@
+Done. Here's the summary:
+
+**Experiment #65**: Reduce RoPE base frequency from 10000 to 1000.
+
+**Change**: Single constant in `_precompute_rotary_embeddings`: `base=10000` → `base=1000` (line 195 of train.py).
+
+**Rationale**: With base=10000, ~2/3 of the 64 rotary dimensions have wavelengths exceeding the 2048 context length and provide negligible positional information. Reducing to base=1000 makes more dimensions useful for encoding position within the actual context. This is an architectural change to positional encoding that has never been tested.
+
+**Risk**: Low. Same computation, same shapes, just different precomputed frequency values. Worst case: ~0.001-0.005 regression.

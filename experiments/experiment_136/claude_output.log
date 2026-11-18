@@ -1,0 +1,7 @@
+Done. Experiment #136: **WARMDOWN_RATIO 0.6 → 0.7**.
+
+**Rationale**: exp13 showed 0.4→0.6 was +0.011 — the strongest hyperparameter signal in the entire history. 0.7 has never been tested. All 6 recent architectural experiments (130-135) were neutral, confirming priority 1 is exhausted.
+
+**Change**: One constant: `WARMDOWN_RATIO = 0.7` (line 523). ~250 steps at full LR + ~580 steps warmdown (vs 330/500 currently).
+
+**Risk**: Low. Worst case is neutral (diminishing returns). Zero crash risk.

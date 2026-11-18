@@ -1,0 +1,44 @@
+Sending to RunPod Flash (RTX_5090)...
+2026-03-11 12:51:53,304 | INFO  | LiveServerless:6vpwrdi9ebthaa | API /run
+2026-03-11 12:51:53,621 | INFO  | LiveServerless:6vpwrdi9ebthaa | Started Job:146cab94-b880-43d0-afba-b5c074629847-e2
+2026-03-11 12:51:53,649 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | Status: IN_QUEUE
+2026-03-11 12:51:54,032 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | .
+2026-03-11 12:51:55,083 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | ..
+2026-03-11 12:52:00,711 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | ...
+2026-03-11 12:52:17,232 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | ....
+2026-03-11 12:52:37,510 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | .....
+2026-03-11 12:52:55,874 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | ......
+2026-03-11 12:53:13,166 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | .......
+2026-03-11 12:53:36,091 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | ........
+2026-03-11 12:53:57,114 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | .........
+2026-03-11 12:54:18,510 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | ..........
+2026-03-11 12:54:38,380 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | ...........
+2026-03-11 12:55:01,675 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | ............
+2026-03-11 12:55:22,699 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | .............
+2026-03-11 12:55:42,564 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | Status: IN_PROGRESS
+2026-03-11 12:55:42,905 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | .
+2026-03-11 12:55:44,219 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | ..
+2026-03-11 12:55:48,622 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | ...
+2026-03-11 12:56:04,254 | INFO  | Job:146cab94-b880-43d0-afba-b5c074629847-e2 | Status: COMPLETED
+2026-03-11 12:56:04,280 | INFO  | Worker:d5boctgpoye0sy | Delay Time: 225003 ms
+2026-03-11 12:56:04,281 | INFO  | Worker:d5boctgpoye0sy | Execution Time: 23084 ms
+Traceback (most recent call last):
+  File "/tmp/autoresearch_gf3zc1m0/train.py", line 527, in <module>
+    optimizer = model.setup_optimizer(
+                ^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/autoresearch_gf3zc1m0/train.py", line 257, in setup_optimizer
+    assert len(list(self.parameters())) == (len(matrix_params) + len(embedding_params) +
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+2026-03-11 11:55:38,594 | INFO  | Installing Python dependencies: ['torch', 'kernels', 'numpy', 'pyarrow', 'requests', 'rustbpe', 'tiktoken']
+GPU: NVIDIA GeForce RTX 5090 -> peak BF16: 838.0 TFLOPS
+Vocab size: 8,192
+Model config: {'sequence_len': 2048, 'vocab_size': 8192, 'n_layer': 8, 'n_head': 4, 'n_kv_head': 4, 'n_embd': 512, 'window_pattern': 'SSSL'}
+Parameter counts:
+  wte                     : 4,194,304
+  value_embeds            : 4,194,304
+  lm_head (tied)          : 0
+  transformer_matrices    : 25,165,952
+  scalars                 : 16
+  total                   : 33,554,576
+Estimated FLOPs per token: 2.390761e+08

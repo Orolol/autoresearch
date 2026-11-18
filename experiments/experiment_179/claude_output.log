@@ -1,0 +1,17 @@
+Done. Here's the summary of experiment #179:
+
+**Idea:** Replace block-diagonal softmax SDPA in local layers (2-5) with chunkwise linear attention + learned per-head exponential decay (RetNet/GLA-inspired). This is priority #1 on the queue.
+
+**What changed:**
+- Local layers now use causal linear attention (no softmax) with decay mask `gamma^(i-j)` within 256-token chunks
+- Cross-chunk recurrent state `S` propagates KV information across the full 2048-token sequence with exponential decay
+- 16 new learnable parameters (4 heads x 4 layers): per-head decay rate initialized to `gamma ≈ 0.982` (~55-token effective context)
+
+**Why this is different from exp152/177 (which failed):**
+- Those ADDED cross-block state ON TOP of softmax — two competing mechanisms, redundant compute
+- This REPLACES softmax entirely — single mechanism, cleaner optimization landscape, compute-neutral
+
+**Risks:**
+- High regression risk (exp178 sigmoid attention was +0.020, but linear attention with decay is fundamentally different)
+- Low crash risk (fixed 8-iteration loop, all standard ops)
+- A bold crash is better than a timid +0.001

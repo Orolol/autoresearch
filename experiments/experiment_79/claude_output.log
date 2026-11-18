@@ -1,0 +1,6 @@
+Done. **Experiment 79: Mid-MLP normalization (NormFormer-style)**
+
+- **Change**: Added `x = norm(x)` after `F.relu(x).square()` in `MLP.forward()` (line 120 of train.py)
+- **Rationale**: All winners improved gradient flow. The MLP hidden activation is the last unnormalized internal activation. RMSNorm ensures c_proj receives unit-variance inputs.
+- **Risk**: Zero crash/OOM risk. This is a 3rd attempt — exp77/78 both crashed on infra, never reached GPU.
+- **Syntax**: verified OK
